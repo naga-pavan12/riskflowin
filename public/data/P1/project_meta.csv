@@ -1,0 +1,2 @@
+project_id,project_name,currency_unit,cap_total_cr,start_month,num_months,underspend_policy,overspend_trigger,cut_method,protect_engineering
+P1,Legacy Project,CR,4000,2025-01,24,ROLLOVER_NEXT_MONTH,CUMULATIVE_BREACH,PROPORTIONAL,false

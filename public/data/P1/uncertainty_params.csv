@@ -1,0 +1,11 @@
+project_id,entity_type,entity_id,dist_type,low_mult,mode_mult,high_mult,ramp_pct_total,notes
+P1,ENG_BUCKET,CONCRETE,TRIANGULAR,0.95,1.00,1.25,0.08,Concrete is volatile (materials + productivity)
+P1,ENG_BUCKET,SHUTTERING,TRIANGULAR,0.97,1.00,1.15,0.03,Moderate volatility
+P1,ENG_BUCKET,BARBENDING,TRIANGULAR,0.97,1.00,1.16,0.03,Moderate volatility
+P1,ENG_BUCKET,ELECTRICAL,TRIANGULAR,0.98,1.00,1.14,0.02,Moderate-low volatility
+P1,ENG_BUCKET,FINISHING,TRIANGULAR,0.96,1.00,1.18,0.02,Finishing scope churn
+P1,DEPT,MARKETING,TRIANGULAR,0.98,1.00,1.10,0.01,Marketing overspend risk
+P1,DEPT,OTHERS,TRIANGULAR,0.99,1.00,1.08,0.01,Other depts lower variance
+P1,COST_COMPONENT,MATERIAL,TRIANGULAR,0.98,1.00,1.20,0.10,Inflation / price volatility
+P1,COST_COMPONENT,SERVICE,TRIANGULAR,0.99,1.00,1.12,0.03,Productivity / subcontractor rates
+P1,COST_COMPONENT,INFRA,TRIANGULAR,0.99,1.00,1.10,0.02,Infra rental / overhead variance

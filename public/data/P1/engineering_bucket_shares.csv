@@ -1,0 +1,6 @@
+project_id,bucket_id,share_of_engineering_demand
+P1,SHUTTERING,0.22
+P1,BARBENDING,0.18
+P1,CONCRETE,0.32
+P1,ELECTRICAL,0.15
+P1,FINISHING,0.13

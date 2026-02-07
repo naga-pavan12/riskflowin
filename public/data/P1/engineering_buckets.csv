@@ -1,0 +1,6 @@
+bucket_id,bucket_name,display_order
+SHUTTERING,Shuttering,1
+BARBENDING,Barbending,2
+CONCRETE,Concrete,3
+ELECTRICAL,Electrical,4
+FINISHING,Finishing,5

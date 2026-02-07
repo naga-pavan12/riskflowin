@@ -1,0 +1,262 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Apple Executive Minimal - Graphite Palette */
+  --graphite-50: #fafafa;
+  --graphite-100: #f4f4f5;
+  --graphite-200: #e4e4e7;
+  --graphite-300: #d1d1d6;
+  --graphite-400: #a1a1aa;
+  --graphite-500: #71717a;
+  --graphite-600: #52525b;
+  --graphite-700: #3f3f46;
+  --graphite-800: #27272a;
+  --graphite-850: #1f1f23;
+  --graphite-900: #18181b;
+  --graphite-950: #0f0f11;
+
+  /* Accent Colors */
+  --accent-blue: #0a84ff;
+  --accent-amber: #ff9f0a;
+  --accent-red: #ff453a;
+  --accent-green: #30d158;
+
+  /* Surfaces (Dark Graphite Theme) */
+  --background: var(--graphite-900);
+  --surface-base: var(--graphite-850);
+  --surface-elevated: var(--graphite-800);
+  --divider: rgba(255, 255, 255, 0.08);
+  --divider-subtle: rgba(255, 255, 255, 0.04);
+
+  /* Text Hierarchy */
+  --text-primary: rgba(255, 255, 255, 0.92);
+  --text-secondary: rgba(255, 255, 255, 0.60);
+  --text-tertiary: rgba(255, 255, 255, 0.40);
+  --text-disabled: rgba(255, 255, 255, 0.25);
+
+  /* Typography Scale */
+  --text-hero: 40px;
+  --text-hero-large: 48px;
+  --text-section: 26px;
+  --text-title: 22px;
+  --text-body: 16px;
+  --text-caption: 14px;
+  --text-small: 13px;
+  --text-micro: 11px;
+
+  /* Spacing Scale (generous) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* Corner Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* Shadows (minimal, soft) */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.12);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.16);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.20);
+  --shadow-xl: 0 8px 32px rgba(0, 0, 0, 0.24);
+
+  /* Status Colors (with icon + label + subtle tint) */
+  --status-low-bg: rgba(48, 209, 88, 0.10);
+  --status-low-border: rgba(48, 209, 88, 0.20);
+  --status-low-text: #30d158;
+  
+  --status-watch-bg: rgba(255, 159, 10, 0.10);
+  --status-watch-border: rgba(255, 159, 10, 0.20);
+  --status-watch-text: #ff9f0a;
+  
+  --status-severe-bg: rgba(255, 69, 58, 0.10);
+  --status-severe-border: rgba(255, 69, 58, 0.20);
+  --status-severe-text: #ff453a;
+
+  /* Primary Action */
+  --action-primary-bg: var(--accent-blue);
+  --action-primary-hover: #0077ed;
+  --action-primary-active: #006edb;
+
+  /* Component Specific */
+  --sidebar-width: 240px;
+  --topbar-height: 64px;
+  --drawer-width: 45%;
+
+  /* Legacy mappings for compatibility */
+  --font-size: 16px;
+  --foreground: var(--text-primary);
+  --card: var(--surface-elevated);
+  --card-foreground: var(--text-primary);
+  --popover: var(--surface-elevated);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--accent-blue);
+  --primary-foreground: white;
+  --secondary: var(--graphite-700);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--graphite-800);
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--graphite-800);
+  --accent-foreground: var(--text-primary);
+  --destructive: var(--accent-red);
+  --destructive-foreground: white;
+  --border: var(--divider);
+  --input: var(--divider);
+  --input-background: var(--surface-base);
+  --ring: var(--accent-blue);
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --radius: var(--radius-md);
+}
+
+@theme inline {
+  --color-graphite-50: var(--graphite-50);
+  --color-graphite-100: var(--graphite-100);
+  --color-graphite-200: var(--graphite-200);
+  --color-graphite-300: var(--graphite-300);
+  --color-graphite-400: var(--graphite-400);
+  --color-graphite-500: var(--graphite-500);
+  --color-graphite-600: var(--graphite-600);
+  --color-graphite-700: var(--graphite-700);
+  --color-graphite-800: var(--graphite-800);
+  --color-graphite-850: var(--graphite-850);
+  --color-graphite-900: var(--graphite-900);
+  --color-graphite-950: var(--graphite-950);
+
+  --color-accent-blue: var(--accent-blue);
+  --color-accent-amber: var(--accent-amber);
+  --color-accent-red: var(--accent-red);
+  --color-accent-green: var(--accent-green);
+
+  --color-background: var(--background);
+  --color-surface-base: var(--surface-base);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-divider: var(--divider);
+  --color-divider-subtle: var(--divider-subtle);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-text-disabled: var(--text-disabled);
+
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-ring: var(--ring);
+}
+
+@layer base {
+  * {
+    @apply outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-[var(--text-primary)];
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+    font-size: var(--text-body);
+    line-height: 1.5;
+    font-feature-settings: 'tnum' 1; /* Tabular numerals */
+    background: radial-gradient(ellipse at top, var(--graphite-850) 0%, var(--graphite-900) 50%, var(--graphite-950) 100%);
+    background-attachment: fixed;
+  }
+
+  html {
+    font-size: 16px;
+  }
+
+  h1 {
+    font-size: var(--text-hero);
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+  }
+
+  h2 {
+    font-size: var(--text-section);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+  }
+
+  h3 {
+    font-size: var(--text-title);
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--text-primary);
+  }
+
+  h4 {
+    font-size: var(--text-body);
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--text-primary);
+  }
+
+  label {
+    font-size: var(--text-caption);
+    font-weight: 500;
+    line-height: 1.5;
+    color: var(--text-secondary);
+  }
+
+  button {
+    font-size: var(--text-body);
+    font-weight: 500;
+    line-height: 1.5;
+  }
+
+  input {
+    font-size: var(--text-body);
+    font-weight: 400;
+    line-height: 1.5;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--graphite-700);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--graphite-600);
+  }
+}
