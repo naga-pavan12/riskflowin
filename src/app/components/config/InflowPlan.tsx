@@ -91,7 +91,7 @@ export function InflowPlan() {
     return (
       <div className="max-w-6xl space-y-8">
         <div>
-          <h2 className="mb-2">Inflow Plan</h2>
+          <h2 className="mb-2">Planned Inflow</h2>
           <p className="text-[var(--text-secondary)]">
             Define planned monthly budget inflows (₹ Cr)
           </p>
@@ -139,7 +139,7 @@ export function InflowPlan() {
       )}
 
       <div>
-        <h2 className="mb-2">Inflow Plan</h2>
+        <h2 className="mb-2">Planned Inflow</h2>
         <p className="text-[var(--text-secondary)]">
           Define planned monthly budget inflows by department (₹ Cr)
         </p>

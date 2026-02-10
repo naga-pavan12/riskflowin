@@ -120,7 +120,7 @@ export function EngineeringDemand() {
     return (
       <div className="max-w-7xl space-y-8">
         <div>
-          <h2 className="mb-2">Engineering Demand</h2>
+          <h2 className="mb-2">Planned Outflow</h2>
           <p className="text-[var(--text-secondary)]">
             Define demand forecasts by activity and component type
           </p>
@@ -168,7 +168,7 @@ export function EngineeringDemand() {
       )}
 
       <div>
-        <h2 className="mb-2">Engineering Demand</h2>
+        <h2 className="mb-2">Planned Outflow</h2>
         <p className="text-[var(--text-secondary)]">
           Define demand forecasts by activity and component type
         </p>

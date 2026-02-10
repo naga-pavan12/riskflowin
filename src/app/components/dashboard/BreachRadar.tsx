@@ -29,7 +29,7 @@ export function BreachRadar({ breachRadar, currentMonth }: BreachRadarProps) {
     };
 
     return (
-        <div className="relative bg-slate-900/55 rounded-xl border border-slate-700/50 ring-1 ring-white/5 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.6)] flex flex-col min-h-[400px] before:content-[''] before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-white/5 before:rounded-t-xl overflow-hidden">
+        <div className="glass-panel rounded-xl flex flex-col min-h-[400px] overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between p-6">
                 <div className="flex items-center gap-3">
@@ -43,21 +43,21 @@ export function BreachRadar({ breachRadar, currentMonth }: BreachRadarProps) {
                 </div>
                 <div className="flex items-center gap-2">
                     {/* Panel Tools */}
-                    <button className="w-9 h-9 rounded-lg bg-slate-800/40 hover:bg-slate-700/50 border border-slate-700/40 flex items-center justify-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50" aria-label="Info">
-                        <Info size={16} className="text-slate-400" />
+                    <button className="w-9 h-9 rounded-lg bg-surface hover:bg-surface-hover border border-border-subtle flex items-center justify-center transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50" aria-label="Info">
+                        <Info size={16} className="text-text-secondary" />
                     </button>
-                    <button className="w-9 h-9 rounded-lg bg-slate-800/40 hover:bg-slate-700/50 border border-slate-700/40 flex items-center justify-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50" aria-label="Expand">
-                        <Maximize2 size={16} className="text-slate-400" />
+                    <button className="w-9 h-9 rounded-lg bg-surface hover:bg-surface-hover border border-border-subtle flex items-center justify-center transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50" aria-label="Expand">
+                        <Maximize2 size={16} className="text-text-secondary" />
                     </button>
-                    <button className="w-9 h-9 rounded-lg bg-slate-800/40 hover:bg-slate-700/50 border border-slate-700/40 flex items-center justify-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50" aria-label="Pin">
-                        <Pin size={16} className="text-slate-400" />
+                    <button className="w-9 h-9 rounded-lg bg-surface hover:bg-surface-hover border border-border-subtle flex items-center justify-center transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50" aria-label="Pin">
+                        <Pin size={16} className="text-text-secondary" />
                     </button>
                     <div className="ml-2">{getUrgencyBadge()}</div>
                 </div>
             </div>
 
             {/* Divider */}
-            <div className="border-t border-slate-800/60" />
+            <div className="border-t border-border-medium" />
 
             {hasBreachRisk ? (
                 <div className="p-6 pt-5">
@@ -122,11 +122,12 @@ export function BreachRadar({ breachRadar, currentMonth }: BreachRadarProps) {
                                         />
                                         <Tooltip
                                             contentStyle={{
-                                                background: '#1e293b',
-                                                border: '1px solid #334155',
-                                                borderRadius: '8px'
+                                                background: 'rgba(24, 24, 27, 0.95)',
+                                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                                borderRadius: '8px',
+                                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                                             }}
-                                            labelStyle={{ color: '#f1f5f9' }}
+                                            labelStyle={{ color: '#f4f4f5' }}
                                             formatter={(value: number | undefined) => [`${((value ?? 0) * 100).toFixed(1)}%`, 'Probability']}
                                         />
                                         <Bar dataKey="probability" radius={[4, 4, 0, 0]}>

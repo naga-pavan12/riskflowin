@@ -1,94 +1,144 @@
 @import "tailwindcss";
 
 :root {
-  /* Executive Color Palette */
-  --color-brand: #4B8BFF;
-  --color-success: #3BBF8A;
-  --color-warning: #F2B84B;
-  --color-danger: #E05A5A;
-  --color-bg-base: #0B1220;
-  --color-bg-card: #121F38;
-  --color-bg-elevated: #1A2742;
-  --color-border-soft: #1E2A44;
-  --color-text-primary: #E7EDF7;
-  --color-text-secondary: #A9B6CC;
-  --color-text-muted: #7F8DA6;
+  /* 
+    OBSIDIAN DESIGN SYSTEM
+    Solid, high-contrast, deep darks.
+    No blur. No transparency bleeding.
+  */
+
+  /* Backgrounds - Solid & Deep */
+  --bg-app: #050505;
+  /* Almost pure black */
+  --bg-surface: #09090b;
+  /* Zinc-950 */
+  --bg-surface-hover: #18181b;
+  /* Zinc-900 */
+  --bg-surface-active: #27272a;
+  /* Zinc-800 */
+  --bg-elevated: #18181b;
+  /* Zinc-900 for cards/popovers */
+
+  /* Borders - Crisp & High Contrast */
+  --border-subtle: #27272a;
+  /* Zinc-800 */
+  --border-medium: #3f3f46;
+  /* Zinc-700 */
+  --border-highlight: #52525b;
+  /* Zinc-600 */
+
+  /* Text - High Legibility */
+  --text-primary: #ffffff;
+  /* Pure White */
+  --text-secondary: #a1a1aa;
+  /* Zinc-400 */
+  --text-tertiary: #71717a;
+  /* Zinc-500 */
+  --text-muted: #52525b;
+  /* Zinc-600 */
+
+  /* Accents - Punchy & Neon-like */
+  --accent-blue: #3b82f6;
+  /* Blue-500 */
+  --accent-blue-dim: rgba(59, 130, 246, 0.1);
+  --accent-blue-glow: rgba(59, 130, 246, 0.5);
+
+  --accent-emerald: #10b981;
+  /* Emerald-500 */
+  --accent-rose: #f43f5e;
+  /* Rose-500 */
+  --accent-amber: #f59e0b;
+  /* Amber-500 */
+  --accent-purple: #a855f7;
+  /* Purple-500 */
+
+  /* Semantic Variables for Tailwind */
+  --color-bg-base: var(--bg-app);
+  --color-bg-card: var(--bg-surface);
+  --color-border-soft: var(--border-subtle);
 }
 
 @layer base {
   body {
-    background-color: var(--color-bg-base);
-    color: var(--color-text-primary);
+    background-color: var(--bg-app);
+    color: var(--text-primary);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Subtle noise texture or radial for depth without muddy blur */
+    background-image: radial-gradient(circle at 50% 0%, #18181b 0%, #050505 60%);
+    background-attachment: fixed;
   }
 
-  /* Improved Focus States for Accessibility */
+  /* Improved Focus States */
   :focus-visible {
-    outline: 2px solid var(--color-brand);
+    outline: 2px solid var(--accent-blue);
     outline-offset: 2px;
+    border-radius: 4px;
   }
 }
 
 @layer components {
 
-  /* Executive Card Style */
-  .exec-card {
-    background-color: var(--color-bg-card);
-    border: 1px solid var(--color-border-soft);
-    border-radius: 12px;
+  /* --- OBSIDIAN PANELS --- */
+  /* Replaces .glass-panel */
+
+  .glass-panel {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+    /* No backdrop-filter */
   }
 
-  /* Muted Label */
-  .exec-label {
+  .glass-panel-hover {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glass-panel-hover:hover {
+    background: var(--bg-surface-hover);
+    border-color: var(--border-medium);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.7), 0 4px 6px -2px rgba(0, 0, 0, 0.5);
+  }
+
+  /* --- TYPOGRAPHY --- */
+
+  .text-kpi {
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+
+  .text-label {
     font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.05em;
     text-transform: uppercase;
-    color: var(--color-text-muted);
-  }
-
-  /* KPI Value */
-  .exec-value {
-    font-size: 28px;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
     font-weight: 700;
-    font-feature-settings: 'tnum';
-    color: var(--color-text-primary);
+    /* Bolder for contrast */
   }
 
-  /* Status Pills */
-  .status-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
+  /* --- FORM ELEMENTS --- */
+
+  .input-glass {
+    background: var(--bg-surface-active);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    transition: all 0.2s ease;
   }
 
-  .status-pill--success {
-    background-color: rgba(59, 191, 138, 0.12);
-    color: var(--color-success);
+  .input-glass:focus {
+    background: var(--bg-surface-active);
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 1px var(--accent-blue-dim);
+    outline: none;
   }
 
-  .status-pill--warning {
-    background-color: rgba(242, 184, 75, 0.12);
-    color: var(--color-warning);
-  }
+  /* --- SCROLLBAR --- */
 
-  .status-pill--danger {
-    background-color: rgba(224, 90, 90, 0.12);
-    color: var(--color-danger);
-  }
-
-  /* Custom Scrollbar (Subtle) */
   .custom-scrollbar::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
+    width: 6px;
+    height: 6px;
   }
 
   .custom-scrollbar::-webkit-scrollbar-track {
@@ -96,59 +146,11 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: var(--color-border-soft);
+    background: var(--border-medium);
     border-radius: 10px;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: var(--color-text-muted);
-  }
-
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-
-  input[type="number"]::-webkit-inner-spin-button,
-  input[type="number"]::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-  }
-}
-
-/* Range Slider (Executive Style) */
-input[type="range"] {
-  -webkit-appearance: none;
-  appearance: none;
-  background: transparent;
-  cursor: pointer;
-}
-
-input[type="range"]::-webkit-slider-runnable-track {
-  height: 4px;
-  background: var(--color-border-soft);
-  border-radius: 2px;
-}
-
-input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 14px;
-  height: 14px;
-  margin-top: -5px;
-  border-radius: 50%;
-  background: var(--color-brand);
-  border: 2px solid var(--color-bg-base);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-}
-
-/* Reduce Motion for Accessibility */
-@media (prefers-reduced-motion: reduce) {
-
-  *,
-  ::before,
-  ::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+    background: var(--text-tertiary);
   }
 }

@@ -220,9 +220,9 @@ export const ActionPortfolio: React.FC = () => {
                                     : "bg-amber-500/10 border-amber-500/30"
                             )}
                         >
-                            <AlertTriangle size={14} className={trigger.urgency === 'high' ? 'text-rose-400' : 'text-amber-400'} />
-                            <span className="text-sm text-[var(--text-primary)]">{trigger.condition}</span>
-                            <ArrowRight size={12} className="text-[var(--text-muted)]" />
+                            <AlertTriangle size={14} className={trigger.urgency === 'high' ? 'text-accent-rose' : 'text-accent-amber'} />
+                            <span className="text-sm text-text-primary">{trigger.condition}</span>
+                            <ArrowRight size={12} className="text-text-muted" />
                             <Badge className={colorStyles[PORTFOLIOS.find(p => p.id === trigger.recommendation)?.color as keyof typeof colorStyles]?.badge}>
                                 {PORTFOLIOS.find(p => p.id === trigger.recommendation)?.name}
                             </Badge>
@@ -248,7 +248,7 @@ export const ActionPortfolio: React.FC = () => {
                                 "relative flex flex-col rounded-[var(--radius-lg)] border transition-all duration-300 cursor-pointer group",
                                 isSelected
                                     ? `${styles.bg} ${styles.border} ring-1 ring-white/10 shadow-[0_0_30px_-10px_rgba(0,0,0,0.5)]`
-                                    : "bg-[var(--surface-elevated)] border-[var(--divider)] hover:border-white/10 hover:shadow-lg"
+                                    : "bg-surface-elevated border-border-subtle hover:border-border-highlight hover:shadow-lg"
                             )}
                             onClick={() => setSelectedPortfolio(isSelected ? null : portfolio.id)}
                         >
@@ -269,8 +269,8 @@ export const ActionPortfolio: React.FC = () => {
                                             <Icon size={20} className={styles.text} />
                                         </div>
                                         <div>
-                                            <h4 className="font-bold text-white">{portfolio.name}</h4>
-                                            <p className="text-xs text-slate-500">{portfolio.description}</p>
+                                            <h4 className="font-bold text-text-primary">{portfolio.name}</h4>
+                                            <p className="text-xs text-text-secondary">{portfolio.description}</p>
                                         </div>
                                     </div>
                                     <ChevronRight
@@ -284,22 +284,22 @@ export const ActionPortfolio: React.FC = () => {
 
                                 {/* Summary Stats */}
                                 <div className="grid grid-cols-2 gap-3 mb-4">
-                                    <div className="bg-slate-800/50 rounded-lg p-3">
-                                        <p className="text-[10px] text-slate-500 uppercase tracking-wide">Delta Cash P50</p>
-                                        <p className="text-lg font-bold text-emerald-400">+₹{totalDelta.toFixed(1)} Cr</p>
+                                    <div className="bg-surface rounded-lg p-3">
+                                        <p className="text-[10px] text-text-muted uppercase tracking-wide">Delta Cash P50</p>
+                                        <p className="text-lg font-bold text-accent-emerald">+₹{totalDelta.toFixed(1)} Cr</p>
                                     </div>
-                                    <div className="bg-slate-800/50 rounded-lg p-3">
-                                        <p className="text-[10px] text-slate-500 uppercase tracking-wide">Shortfall ↓</p>
-                                        <p className="text-lg font-bold text-emerald-400">-{totalShortfallReduction}%</p>
+                                    <div className="bg-surface rounded-lg p-3">
+                                        <p className="text-[10px] text-text-muted uppercase tracking-wide">Shortfall ↓</p>
+                                        <p className="text-lg font-bold text-accent-emerald">-{totalShortfallReduction}%</p>
                                     </div>
                                 </div>
 
                                 {/* Strategy */}
-                                <p className="text-xs text-slate-400 italic mb-4">"{portfolio.strategy}"</p>
+                                <p className="text-xs text-text-secondary italic mb-4">"{portfolio.strategy}"</p>
 
                                 {/* Actions Count */}
                                 <div className="flex items-center justify-between text-xs">
-                                    <span className="text-slate-500">{portfolio.actions.length} actions</span>
+                                    <span className="text-text-muted">{portfolio.actions.length} actions</span>
                                     <span className={styles.text}>View details →</span>
                                 </div>
                             </div>

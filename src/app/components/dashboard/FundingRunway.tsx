@@ -14,12 +14,12 @@ export const FundingRunway: React.FC<FundingRunwayProps> = ({ stats }) => {
         <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
                 <thead>
-                    <tr className="bg-slate-950/40">
-                        <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest border-r border-white/5">Month</th>
-                        <th className="px-5 py-4 text-[10px] font-black text-blue-400 uppercase tracking-widest text-right bg-blue-500/5">Safe Spend Limit<br />(P20)</th>
-                        <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Planned<br />Outflow</th>
-                        <th className="px-5 py-4 text-[10px] font-black text-rose-500 uppercase tracking-widest text-right">Gap To Fix</th>
-                        <th className="px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Status</th>
+                    <tr className="bg-surface border-b border-border-subtle">
+                        <th className="px-5 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest border-r border-border-subtle">Month</th>
+                        <th className="px-5 py-4 text-[10px] font-black text-accent-blue uppercase tracking-widest text-right bg-brand/5">Safe Spend Limit<br />(P20)</th>
+                        <th className="px-5 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest text-right">Planned<br />Outflow</th>
+                        <th className="px-5 py-4 text-[10px] font-black text-accent-rose uppercase tracking-widest text-right">Gap To Fix</th>
+                        <th className="px-5 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest text-center">Status</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">

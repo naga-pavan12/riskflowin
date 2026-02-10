@@ -41,7 +41,7 @@ export function CloseProjection({
     ];
 
     return (
-        <div className="relative bg-slate-900/55 rounded-xl border border-slate-700/50 ring-1 ring-white/5 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.6)] flex flex-col min-h-[400px] before:content-[''] before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-white/5 before:rounded-t-xl overflow-hidden">
+        <div className="glass-panel rounded-xl flex flex-col min-h-[400px] overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between p-6">
                 <div className="flex items-center gap-3">
@@ -55,14 +55,14 @@ export function CloseProjection({
                 </div>
                 <div className="flex items-center gap-2">
                     {/* Panel Tools */}
-                    <button className="w-9 h-9 rounded-lg bg-slate-800/40 hover:bg-slate-700/50 border border-slate-700/40 flex items-center justify-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50" aria-label="Info">
-                        <Info size={16} className="text-slate-400" />
+                    <button className="w-9 h-9 rounded-lg bg-surface hover:bg-surface-hover border border-border-subtle flex items-center justify-center transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50" aria-label="Info">
+                        <Info size={16} className="text-text-secondary" />
                     </button>
-                    <button className="w-9 h-9 rounded-lg bg-slate-800/40 hover:bg-slate-700/50 border border-slate-700/40 flex items-center justify-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50" aria-label="Expand">
-                        <Maximize2 size={16} className="text-slate-400" />
+                    <button className="w-9 h-9 rounded-lg bg-surface hover:bg-surface-hover border border-border-subtle flex items-center justify-center transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50" aria-label="Expand">
+                        <Maximize2 size={16} className="text-text-secondary" />
                     </button>
-                    <button className="w-9 h-9 rounded-lg bg-slate-800/40 hover:bg-slate-700/50 border border-slate-700/40 flex items-center justify-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50" aria-label="Pin">
-                        <Pin size={16} className="text-slate-400" />
+                    <button className="w-9 h-9 rounded-lg bg-surface hover:bg-surface-hover border border-border-subtle flex items-center justify-center transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50" aria-label="Pin">
+                        <Pin size={16} className="text-text-secondary" />
                     </button>
                     <Badge className={`ml-2 ${statusBadges[status]}`}>
                         {status === 'severe' ? 'High Risk' : status === 'watch' ? 'Watch' : 'On Track'}
@@ -71,48 +71,48 @@ export function CloseProjection({
             </div>
 
             {/* Divider */}
-            <div className="border-t border-slate-800/60" />
+            <div className="border-t border-border-medium" />
 
             {/* Main Metrics */}
             <div className="p-6 pt-5">
                 <div className="grid grid-cols-3 gap-4 mb-6">
                     {/* EOM Cash Due */}
-                    <div className="bg-slate-800/40 rounded-xl p-4 ring-1 ring-white/5">
-                        <p className="text-[11px] font-semibold text-slate-500 mb-2 uppercase tracking-widest">EOM Cash Due</p>
+                    <div className="bg-surface rounded-xl p-4 ring-1 ring-white/5">
+                        <p className="text-[11px] font-semibold text-text-secondary mb-2 uppercase tracking-widest">EOM Cash Due</p>
                         <div className="flex items-baseline gap-1.5 tabular-nums">
-                            <span className="text-slate-400 text-lg font-semibold">₹</span>
-                            <span className="text-2xl font-semibold text-slate-100">
+                            <span className="text-text-tertiary text-lg font-semibold">₹</span>
+                            <span className="text-2xl font-semibold text-text-primary">
                                 {(nowCast?.eomCashDueP50 ?? 0).toFixed(1)}
                             </span>
-                            <span className="text-sm text-slate-500 font-medium ml-0.5">Cr</span>
+                            <span className="text-sm text-text-muted font-medium ml-0.5">Cr</span>
                         </div>
-                        <p className="text-[11px] leading-4 text-slate-500 mt-2 font-mono tabular-nums">
+                        <p className="text-[11px] leading-4 text-text-muted mt-2 font-mono tabular-nums">
                             P80: ₹{(nowCast?.eomCashDueP80 ?? 0).toFixed(1)} Cr
                         </p>
                     </div>
 
                     {/* Exceed Plan Probability */}
-                    <div className="bg-slate-800/40 rounded-xl p-4 ring-1 ring-white/5">
-                        <p className="text-[11px] font-semibold text-slate-500 mb-2 uppercase tracking-widest">Exceed Plan Risk</p>
+                    <div className="bg-surface rounded-xl p-4 ring-1 ring-white/5">
+                        <p className="text-[11px] font-semibold text-text-secondary mb-2 uppercase tracking-widest">Exceed Plan Risk</p>
                         <div className="flex items-baseline gap-1.5 tabular-nums">
                             <span className={`text-2xl font-semibold ${statusColors[status]}`}>
                                 {exceedProbPercent.toFixed(0)}%
                             </span>
                         </div>
-                        <p className="text-[11px] leading-4 text-slate-500 mt-2 font-mono tabular-nums">
+                        <p className="text-[11px] leading-4 text-text-muted mt-2 font-mono tabular-nums">
                             Plan: ₹{plannedTotal.toFixed(1)} Cr
                         </p>
                     </div>
 
                     {/* Top Driver */}
-                    <div className="bg-slate-800/40 rounded-xl p-4 ring-1 ring-white/5">
-                        <p className="text-[11px] font-semibold text-slate-500 mb-2 uppercase tracking-widest">Primary Driver</p>
+                    <div className="bg-surface rounded-xl p-4 ring-1 ring-white/5">
+                        <p className="text-[11px] font-semibold text-text-secondary mb-2 uppercase tracking-widest">Primary Driver</p>
                         <div className="flex items-baseline gap-2">
-                            <span className="text-lg font-semibold text-white">
+                            <span className="text-lg font-semibold text-text-primary">
                                 {nowCast?.topDrivers?.[0]?.label || 'Material Vol'}
                             </span>
                         </div>
-                        <p className="text-[11px] leading-4 text-slate-500 mt-2 font-mono tabular-nums">
+                        <p className="text-[11px] leading-4 text-text-muted mt-2 font-mono tabular-nums">
                             {((nowCast?.topDrivers?.[0]?.contribution ?? 0.4) * 100).toFixed(0)}% contribution
                         </p>
                     </div>
@@ -120,15 +120,15 @@ export function CloseProjection({
 
                 {/* Driver Chips */}
                 <div className="mb-4">
-                    <p className="text-[11px] font-semibold text-slate-500 mb-3 uppercase tracking-widest">Risk Factors</p>
+                    <p className="text-[11px] font-semibold text-text-secondary mb-3 uppercase tracking-widest">Risk Factors</p>
                     <div className="flex flex-wrap gap-2">
                         {drivers.map((driver) => (
                             <button
                                 key={driver.label}
-                                className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50
+                                className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50
                                     ${driver.active
-                                        ? 'bg-blue-500/15 text-blue-300 border border-blue-500/30 ring-1 ring-blue-500/20'
-                                        : 'bg-slate-800/40 text-slate-400 border border-slate-700/40 hover:bg-slate-700/50 hover:text-slate-300'
+                                        ? 'bg-brand/15 text-brand border border-brand/30 ring-1 ring-brand/20'
+                                        : 'bg-surface hover:bg-surface-hover text-text-secondary hover:text-text-primary border border-border-subtle'
                                     }
                                 `}
                             >
@@ -141,20 +141,20 @@ export function CloseProjection({
 
             {/* Recommended Actions */}
             {nowCast?.recommendedActions && nowCast.recommendedActions.length > 0 && (
-                <div className="p-6 pt-0 border-t border-slate-800/60 mt-auto">
-                    <p className="text-[11px] font-semibold text-slate-500 mb-3 uppercase tracking-widest">Immediate Actions</p>
+                <div className="p-6 pt-0 border-t border-border-medium mt-auto">
+                    <p className="text-[11px] font-semibold text-text-secondary mb-3 uppercase tracking-widest">Immediate Actions</p>
                     <div className="flex gap-3">
                         {nowCast.recommendedActions.slice(0, 2).map(action => (
                             <button
                                 key={action.id}
                                 onClick={() => onActionClick?.(action.id)}
-                                className="flex-1 p-3 bg-slate-800/40 rounded-xl border border-slate-700/40 hover:border-blue-500/40 hover:bg-slate-800/60 transition-all duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+                                className="flex-1 p-3 bg-surface hover:bg-surface-hover rounded-xl border border-border-subtle hover:border-brand/40 transition-all duration-200 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50"
                             >
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm font-medium text-white">{action.title}</span>
-                                    <ArrowRight size={14} className="text-slate-500 group-hover:text-blue-400 transition-colors" />
+                                    <span className="text-sm font-medium text-text-primary">{action.title}</span>
+                                    <ArrowRight size={14} className="text-text-secondary group-hover:text-brand transition-colors" />
                                 </div>
-                                <p className="text-xs text-emerald-400 mt-1">{action.impact}</p>
+                                <p className="text-xs text-accent-emerald mt-1">{action.impact}</p>
                             </button>
                         ))}
                     </div>

@@ -16,6 +16,7 @@ import { CloseProjection } from './CloseProjection';
 import { BreachRadar } from './BreachRadar';
 import { DebtBacklogTrend } from './DebtBacklogTrend';
 import { getEarlyWarnings } from '../../../analysis/earlyWarnings';
+import { InflowOutflowChart } from './InflowOutflowChart';
 import type { MonthRisk } from '../../data/sampleData';
 
 interface DashboardProps {
@@ -50,25 +51,8 @@ export function Dashboard({ onMonthClick }: DashboardProps) {
 
   const totalSpentToDate = historicalSpent + currentSpent;
 
-  // Calculate Engineering Cap from sum of all Engineering Demand values
-  const engineeringCap = Object.keys(engineeringDemand).reduce((total, month) => {
-    const monthData = engineeringDemand[month];
-    if (!monthData) return total;
-
-    let monthTotal = 0;
-    Object.keys(monthData).forEach(entity => {
-      const entityData = monthData[entity];
-      if (!entityData) return;
-
-      Object.keys(entityData).forEach(activity => {
-        const activityData = entityData[activity] as any;
-        if (!activityData) return;
-
-        monthTotal += (activityData.SERVICE || 0) + (activityData.MATERIAL || 0) + (activityData.INFRA || 0);
-      });
-    });
-    return total + monthTotal;
-  }, 0);
+  // Engineering Cap = project budget from config, NOT the sum of demand
+  const engineeringCap = config.capTotalCr;
 
   const remainingCap = engineeringCap - totalSpentToDate;
   const futureGaps = results.monthlyStats.filter((s) => !s.isHistorical).reduce((sum, s) => sum + (s.gapToFix || 0), 0);
@@ -151,73 +135,90 @@ export function Dashboard({ onMonthClick }: DashboardProps) {
       {/* Executive Status Strip */}
       <header className="grid grid-cols-4 gap-5">
         {/* Card 1: Spent To Date */}
-        <div className="relative bg-slate-900/45 border border-slate-700/40 p-5 rounded-xl ring-1 ring-white/5 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.6)] before:content-[''] before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-white/5 before:rounded-t-xl">
-          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest block mb-2">Spent To Date (Eng)</span>
-          <div className="flex items-baseline gap-1.5 tabular-nums">
-            <span className="text-slate-400 text-xl font-semibold">₹</span>
-            <span className="text-2xl font-semibold text-slate-100">{totalSpentToDate.toFixed(1)}</span>
-            <span className="text-sm text-slate-500 font-medium uppercase ml-1">Cr</span>
+        {/* Card 1: Spent To Date */}
+        <div className="glass-panel p-5 rounded-xl border-l-[3px] border-l-blue-500 relative group overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-10 transition-opacity duration-500">
+            <Activity className="w-24 h-24 text-blue-500 -mr-4 -mt-4" />
           </div>
-          <div className="text-[11px] leading-4 text-slate-500 mt-2 font-mono">
+          <span className="text-label block mb-2">Spent To Date (Eng)</span>
+          <div className="flex items-baseline gap-1.5 tabular-nums relative z-10">
+            <span className="text-text-tertiary text-xl font-semibold">₹</span>
+            <span className="text-3xl font-bold text-text-primary tracking-tight">{totalSpentToDate.toFixed(1)}</span>
+            <span className="text-xs text-text-muted font-bold uppercase ml-1">Cr</span>
+          </div>
+          <div className="text-[11px] leading-4 text-text-secondary mt-2 font-mono relative z-10">
             +₹2.1 Cr vs last month
           </div>
         </div>
 
         {/* Card 2: Cap Remaining */}
-        <div className="relative bg-slate-900/45 border border-slate-700/40 p-5 rounded-xl ring-1 ring-white/5 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.6)] before:content-[''] before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-white/5 before:rounded-t-xl">
-          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest block mb-2">Cap Remaining</span>
-          <div className="flex items-baseline gap-1.5 tabular-nums">
-            <span className={`text-xl font-semibold ${remainingCap < 0 ? 'text-rose-400' : 'text-slate-400'}`}>₹</span>
-            <span className={`text-2xl font-semibold ${remainingCap < 0 ? 'text-rose-300' : 'text-emerald-300'}`}>{remainingCap.toFixed(1)}</span>
-            <span className={`text-sm font-medium uppercase ml-1 ${remainingCap < 0 ? 'text-rose-400/70' : 'text-emerald-400/70'}`}>Cr</span>
+        {/* Card 2: Cap Remaining */}
+        <div className="glass-panel p-5 rounded-xl border-l-[3px] border-l-emerald-500 relative group overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-10 transition-opacity duration-500">
+            <ShieldAlert className="w-24 h-24 text-emerald-500 -mr-4 -mt-4" />
           </div>
-          <div className={`text-[11px] leading-4 mt-2 font-mono ${remainingCap < 0 ? 'text-rose-400/80' : 'text-emerald-400/80'}`}>
+          <span className="text-label block mb-2">Cap Remaining</span>
+          <div className="flex items-baseline gap-1.5 tabular-nums relative z-10">
+            <span className={`text-xl font-semibold ${remainingCap < 0 ? 'text-accent-rose' : 'text-text-tertiary'}`}>₹</span>
+            <span className={`text-3xl font-bold tracking-tight ${remainingCap < 0 ? 'text-accent-rose' : 'text-accent-emerald'}`}>{remainingCap.toFixed(1)}</span>
+            <span className="text-xs text-text-muted font-bold uppercase ml-1">Cr</span>
+          </div>
+          <div className={`text-[11px] leading-4 mt-2 font-mono relative z-10 ${remainingCap < 0 ? 'text-accent-rose/80' : 'text-accent-emerald/80'}`}>
             {remainingCap < 0 ? '−' : '+'}₹{Math.abs(remainingCap * 0.02).toFixed(1)} Cr vs last month
           </div>
         </div>
 
         {/* Card 3: Total Gap */}
-        <div className="relative bg-slate-900/45 border border-slate-700/40 p-5 rounded-xl ring-1 ring-white/5 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.6)] before:content-[''] before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-white/5 before:rounded-t-xl">
-          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest block mb-2">Total Gap (6m)</span>
-          <div className="flex items-baseline gap-1.5 tabular-nums">
-            <span className="text-xl font-semibold text-rose-400">₹</span>
-            <span className="text-2xl font-semibold text-rose-300">{futureGaps.toFixed(1)}</span>
-            <span className="text-sm text-rose-400/70 font-medium uppercase ml-1">Cr</span>
+        {/* Card 3: Total Gap */}
+        <div className="glass-panel p-5 rounded-xl border-l-[3px] border-l-rose-500 relative group overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-10 transition-opacity duration-500">
+            <TrendingUp className="w-24 h-24 text-rose-500 -mr-4 -mt-4" />
           </div>
-          <div className="text-[11px] leading-4 text-slate-500 mt-2 font-mono">
+          <span className="text-label block mb-2">Total Gap (6m)</span>
+          <div className="flex items-baseline gap-1.5 tabular-nums relative z-10">
+            <span className="text-xl font-semibold text-accent-rose/70">₹</span>
+            <span className="text-3xl font-bold text-accent-rose tracking-tight">{futureGaps.toFixed(1)}</span>
+            <span className="text-xs text-text-muted font-bold uppercase ml-1">Cr</span>
+          </div>
+          <div className="text-[11px] leading-4 text-text-secondary mt-2 font-mono relative z-10">
             {futureGaps === 0 ? 'No gap projected' : `−₹${(futureGaps * 0.1).toFixed(1)} Cr vs last month`}
           </div>
         </div>
 
         {/* Card 4: Health Distribution */}
-        <div className="relative bg-blue-500/5 border border-blue-500/15 p-5 rounded-xl ring-1 ring-blue-500/10 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.6)] before:content-[''] before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-blue-400/10 before:rounded-t-xl">
-          <span className="text-[11px] font-semibold text-blue-300/80 uppercase tracking-widest block mb-2">Health Distribution</span>
-          <div className="flex items-center gap-2 mt-1">
-            <div className="h-2.5 flex-1 bg-slate-800/60 rounded-full overflow-hidden flex">
-              <div className="h-full bg-emerald-400/90 transition-all duration-500" style={{ width: `${healthPct.low}%` }} />
-              <div className="h-full bg-amber-400/90 transition-all duration-500" style={{ width: `${healthPct.watch}%` }} />
-              <div className="h-full bg-rose-400/90 transition-all duration-500" style={{ width: `${healthPct.severe}%` }} />
+        {/* Card 4: Health Distribution */}
+        <div className="glass-panel p-5 rounded-xl border-l-[3px] border-l-purple-500 relative group overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-10 transition-opacity duration-500">
+            <CheckCircle2 className="w-24 h-24 text-purple-500 -mr-4 -mt-4" />
+          </div>
+          <span className="text-label block mb-2">Health Distribution</span>
+          <div className="flex items-center gap-2 mt-3 mb-1">
+            <div className="h-2.5 flex-1 bg-surface-active rounded-full overflow-hidden flex">
+              <div className="h-full bg-accent-emerald transition-all duration-500" style={{ width: `${healthPct.low}%` }} />
+              <div className="h-full bg-accent-amber transition-all duration-500" style={{ width: `${healthPct.watch}%` }} />
+              <div className="h-full bg-accent-rose transition-all duration-500" style={{ width: `${healthPct.severe}%` }} />
             </div>
           </div>
           {/* Legend with counts */}
           <div className="flex items-center gap-4 mt-3">
             <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-emerald-400" />
-              <span className="text-[11px] leading-4 text-slate-400 font-medium">Low <span className="text-slate-300 tabular-nums">{healthCounts.low || 0}</span></span>
+              <div className="w-2 h-2 rounded-full bg-accent-emerald" />
+              <span className="text-[11px] leading-4 text-text-secondary font-medium">Low <span className="text-text-primary tabular-nums">{healthCounts.low || 0}</span></span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-amber-400" />
-              <span className="text-[11px] leading-4 text-slate-400 font-medium">Watch <span className="text-slate-300 tabular-nums">{healthCounts.watch || 0}</span></span>
+              <div className="w-2 h-2 rounded-full bg-accent-amber" />
+              <span className="text-[11px] leading-4 text-text-secondary font-medium">Watch <span className="text-text-primary tabular-nums">{healthCounts.watch || 0}</span></span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-rose-400" />
-              <span className="text-[11px] leading-4 text-slate-400 font-medium">Severe <span className="text-slate-300 tabular-nums">{healthCounts.severe || 0}</span></span>
+              <div className="w-2 h-2 rounded-full bg-accent-rose" />
+              <span className="text-[11px] leading-4 text-text-secondary font-medium">Severe <span className="text-text-primary tabular-nums">{healthCounts.severe || 0}</span></span>
             </div>
           </div>
         </div>
       </header>
 
 
+      {/* Control Room Panels */}
       {/* Control Room Panels */}
       <div className="flex flex-col gap-6">
         <CloseProjection
@@ -236,9 +237,9 @@ export function Dashboard({ onMonthClick }: DashboardProps) {
 
       {/* Early Warning Panel */}
       {earlyWarnings.length > 0 && (
-        <div className="bg-slate-900/45 border border-slate-700/40 rounded-xl p-5 ring-1 ring-white/5">
-          <h3 className="text-sm font-bold text-white uppercase tracking-widest mb-4 flex items-center gap-2">
-            <ShieldAlert className="w-4 h-4 text-amber-400" />
+        <div className="glass-panel rounded-xl p-5 border-l-4 border-l-amber-500/50">
+          <h3 className="text-label mb-4 flex items-center gap-2 text-amber-500">
+            <ShieldAlert className="w-4 h-4" />
             3-Month Early Warnings
           </h3>
           <div className="space-y-3">
@@ -264,8 +265,8 @@ export function Dashboard({ onMonthClick }: DashboardProps) {
                     {w.level}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <span className="text-sm font-semibold text-white">{w.title}</span>
-                    <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">{w.message}</p>
+                    <span className="text-sm font-semibold text-text-primary">{w.title}</span>
+                    <p className="text-xs text-text-secondary mt-0.5 leading-relaxed">{w.message}</p>
                   </div>
                 </div>
               );
@@ -274,11 +275,15 @@ export function Dashboard({ onMonthClick }: DashboardProps) {
         </div>
       )}
 
+      {/* Financial Performance Graph */}
+      <InflowOutflowChart />
+
+      {/* Monthly Overview */}
       {/* Monthly Overview */}
       <div>
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-lg font-bold text-white tracking-wide">Monthly Overview</h3>
-          <span className="text-[11px] leading-4 text-slate-500 font-medium">Click a month for details</span>
+          <h3 className="text-lg font-bold text-text-primary tracking-wide">Monthly Overview</h3>
+          <span className="text-[11px] leading-4 text-text-muted font-medium">Click a month for details</span>
         </div>
 
         <div className="grid grid-cols-12 gap-2">
@@ -295,13 +300,12 @@ export function Dashboard({ onMonthClick }: DashboardProps) {
                 key={month.month}
                 onClick={() => onMonthClick?.(month)}
                 className={`
-                  relative p-3 rounded-xl border transition-all duration-150 ease-out
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50
-                  hover:bg-slate-800/55 hover:border-slate-600/60 
-                  active:scale-[0.99] active:bg-slate-700/40
+                  relative p-3 rounded-xl border transition-all duration-200 ease-out
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50
+                  active:scale-[0.98]
                   ${isCurrentMonth
-                    ? 'bg-blue-500/10 border-blue-500/30 ring-1 ring-blue-500/20 shadow-[0_0_20px_-10px_rgba(59,130,246,0.4)] -translate-y-px'
-                    : 'bg-slate-900/45 border-slate-700/40 ring-1 ring-white/5'
+                    ? 'bg-brand/10 border-brand/30 ring-1 ring-brand/20 shadow-[0_0_20px_-10px_rgba(59,130,246,0.4)] -translate-y-px'
+                    : 'glass-panel hover:bg-surface-hover hover:border-border-highlight'
                   }
                 `}
                 style={{ animationDelay: `${index * 50}ms` }}
@@ -344,8 +348,8 @@ export function Dashboard({ onMonthClick }: DashboardProps) {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         {/* Left: Funding Runway (Main Decision Table) */}
         <div className="xl:col-span-2 space-y-8">
-          <section className="bg-slate-900 border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
-            <div className="p-6 border-b border-white/5 flex justify-between items-center">
+          <section className="glass-panel rounded-2xl overflow-hidden">
+            <div className="p-6 border-b border-border-medium flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-black text-white uppercase tracking-tighter flex items-center gap-2">
                   <TrendingUp size={20} className="text-blue-500" />
@@ -360,8 +364,8 @@ export function Dashboard({ onMonthClick }: DashboardProps) {
 
         {/* Right: Cause Stack & Secondary Charts */}
         <div className="space-y-8">
-          <section className="bg-slate-900 border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
-            <div className="p-6 border-b border-white/5">
+          <section className="glass-panel rounded-2xl overflow-hidden">
+            <div className="p-6 border-b border-border-medium">
               <h3 className="text-lg font-black text-white uppercase tracking-tighter flex items-center gap-2">
                 <ShieldAlert size={20} className="text-rose-500" />
                 Primary Risk Drivers
@@ -370,7 +374,7 @@ export function Dashboard({ onMonthClick }: DashboardProps) {
             <CauseStack causes={results.kpis.topDrivers || []} />
           </section>
 
-          <section className="bg-slate-900 border border-white/5 rounded-2xl overflow-hidden shadow-2xl p-6">
+          <section className="glass-panel rounded-2xl overflow-hidden p-6">
             <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Risk Heat Calendar</h3>
             <RiskCalendar stats={results.monthlyStats} />
           </section>
@@ -378,8 +382,8 @@ export function Dashboard({ onMonthClick }: DashboardProps) {
       </div>
 
       {/* Bottom: Action Portfolio */}
-      <section className="bg-slate-950/50 border border-blue-500/20 rounded-2xl overflow-hidden shadow-2xl">
-        <div className="p-8 border-b border-white/5 flex justify-between items-center">
+      <section className="glass-panel rounded-2xl overflow-hidden border-t-4 border-t-blue-500/20">
+        <div className="p-8 border-b border-border-medium flex justify-between items-center">
           <div>
             <h3 className="text-2xl font-black text-white uppercase tracking-tighter flex items-center gap-3">
               <Activity size={24} className="text-emerald-400" />

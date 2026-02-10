@@ -41,8 +41,8 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
     {
       label: 'PLANNING',
       items: [
-        { id: 'inflow-plan', label: 'Inflow Plan', icon: TrendingUp },
-        { id: 'engineering-demand', label: 'Engineering Demand', icon: Activity },
+        { id: 'inflow-plan', label: 'Planned Inflow', icon: TrendingUp },
+        { id: 'engineering-demand', label: 'Planned Outflow', icon: Activity },
         { id: 'forecast-baseline', label: 'Forecast Baseline', icon: FileText },
         { id: 'risk-setup', label: 'Risk Setup', icon: Shield },
       ]
@@ -50,27 +50,28 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
     {
       label: 'ACTUALS',
       items: [
-        { id: 'recorded-actuals', label: 'Recorded Actuals', icon: Database },
+        { id: 'actual-inflow', label: 'Actual Inflow', icon: TrendingUp },
+        { id: 'recorded-actuals', label: 'Actual Outflow', icon: Database },
         { id: 'current-month-actuals', label: 'Current Month Actuals', icon: Clock },
       ]
     }
   ];
 
   return (
-    <div className="flex h-screen bg-[#0f0f11]">
-      {/* Sidebar */}
-      <aside className="w-[240px] bg-[#0f0f11] border-r border-slate-800/60 flex flex-col">
-        {/* Logo */}
-        <div className="px-6 py-6 border-b border-slate-800/60">
+    <div className="flex h-screen bg-app text-text-primary overflow-hidden">
+      {/* Sidebar - Glassmorphism */}
+      <aside className="w-[260px] relative z-20 flex flex-col border-r border-border-subtle bg-surface backdrop-blur-xl">
+        {/* Logo Area */}
+        <div className="px-6 py-8 border-b border-border-subtle">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-[0_0_20px_-5px_rgba(59,130,246,0.5)]">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand to-brand-glow flex items-center justify-center shadow-lg shadow-brand/20 ring-1 ring-white/10">
               <TrendingUp className="w-5 h-5 text-white" />
             </div>
             <div>
-              <div className="text-white font-semibold text-[15px]">
+              <div className="text-white font-semibold text-[16px] tracking-tight">
                 RiskInflow Pro
               </div>
-              <div className="text-slate-500 text-[11px] font-medium">
+              <div className="text-text-muted text-[11px] font-medium uppercase tracking-wider">
                 Decision Console
               </div>
             </div>
@@ -78,11 +79,11 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 overflow-y-auto">
+        <nav className="flex-1 px-4 py-6 overflow-y-auto custom-scrollbar">
           {navigationSections.map((section, sectionIndex) => (
-            <div key={section.label} className={sectionIndex > 0 ? 'mt-6' : ''}>
+            <div key={section.label} className={sectionIndex > 0 ? 'mt-8' : ''}>
               {/* Section Label */}
-              <div className="text-[11px] font-semibold tracking-widest text-slate-500 px-3 mb-2">
+              <div className="text-[10px] font-bold tracking-widest text-text-muted px-3 mb-3 uppercase">
                 {section.label}
               </div>
 
@@ -97,17 +98,20 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
                       key={item.id}
                       onClick={() => onNavigate(item.id)}
                       className={`
-                        w-full flex items-center gap-3 px-3 py-2.5 rounded-lg 
-                        transition-all duration-150 ease-out text-[14px] font-medium
-                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50
+                        group w-full flex items-center gap-3 px-3 py-2.5 rounded-lg 
+                        transition-all duration-200 ease-out text-[13px] font-medium
+                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50
                         ${isActive
-                          ? 'relative bg-blue-500/90 text-white shadow-[0_0_0_1px_rgba(59,130,246,0.35),0_10px_25px_-15px_rgba(59,130,246,0.65)] before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:rounded-r before:bg-white/70'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-800/55 active:scale-[0.99] active:bg-slate-700/40'
+                          ? 'bg-brand/10 text-brand shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] border border-brand/20'
+                          : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover hover:translate-x-1'
                         }
-`}
+                      `}
                     >
-                      <Icon className="w-4 h-4" />
+                      <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-brand' : 'text-text-muted group-hover:text-text-secondary'}`} />
                       <span>{item.label}</span>
+                      {isActive && (
+                        <div className="ml-auto w-1.5 h-1.5 rounded-full bg-brand shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
+                      )}
                     </button>
                   );
                 })}
@@ -117,16 +121,25 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
         </nav>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-800/60">
-          <div className="text-[11px] leading-4 text-slate-500 font-mono">
-            v2.1.0 • Updated Feb 5
+        <div className="px-6 py-6 border-t border-border-subtle bg-surface-active/30">
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)] animate-pulse"></div>
+            <div className="text-[11px] font-medium text-text-secondary">System Operational</div>
+          </div>
+          <div className="mt-2 text-[10px] text-text-muted font-mono">
+            v2.1.0 • Updated Feb 10
           </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        {children}
+      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto custom-scrollbar relative">
+        {/* Background Ambient Glows */}
+        <div className="fixed top-0 left-0 w-full h-[500px] bg-brand/5 blur-[120px] pointer-events-none z-0" />
+
+        <div className="relative z-10 p-8">
+          {children}
+        </div>
       </main>
     </div>
   );

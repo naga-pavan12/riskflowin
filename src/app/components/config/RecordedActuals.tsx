@@ -147,7 +147,7 @@ export function RecordedActuals() {
     return (
       <div className="max-w-7xl space-y-8">
         <div>
-          <h2 className="mb-2">Recorded Actuals</h2>
+          <h2 className="mb-2">Actual Outflow</h2>
           <p className="text-[var(--text-secondary)]">
             Enter actual spending data as it becomes available
           </p>
@@ -197,7 +197,7 @@ export function RecordedActuals() {
       <div>
         <div className="flex items-start justify-between">
           <div>
-            <h2 className="mb-2">Recorded Actuals</h2>
+            <h2 className="mb-2">Actual Outflow</h2>
             <p className="text-[var(--text-secondary)]">
               Enter actual spending data as it becomes available
             </p>
