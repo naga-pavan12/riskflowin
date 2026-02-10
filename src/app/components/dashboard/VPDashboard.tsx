@@ -5,9 +5,10 @@ import { FundingRunway } from './FundingRunway';
 import { CauseStack } from './CauseStack';
 import { ActionPortfolio } from './ActionPortfolio';
 import { RiskCalendar } from './RiskCalendar';
+import { CloseProjection } from './CloseProjection';
 
 export const VPDashboard: React.FC = () => {
-    const { results, config } = useProjectStore();
+    const { results, config, currentMonthActuals } = useProjectStore();
 
     if (!results) {
         return (
@@ -22,7 +23,10 @@ export const VPDashboard: React.FC = () => {
 
     // Top Summary Calculation
     const historicalStats = results.monthlyStats.filter((s) => s.isHistorical);
+
+    // Calculate historical spent
     const totalSpentToDate = historicalStats.reduce((sum, s) => sum + s.plannedOutflowTotal, 0);
+
     const remainingCap = config.capTotalCr - totalSpentToDate;
     const futureGaps = results.monthlyStats.filter((s) => !s.isHistorical).reduce((sum, s) => sum + (s.gapToFix || 0), 0);
 
@@ -43,7 +47,9 @@ export const VPDashboard: React.FC = () => {
                     </div>
                 </div>
                 <div className="bg-slate-900 border border-white/5 p-4 rounded-xl shadow-2xl">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Total Gap (6m)</span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">
+                        Total Gap (6m)
+                    </span>
                     <div className="flex items-end gap-2 text-2xl font-black text-rose-500">
                         ₹{futureGaps.toFixed(1)} <span className="text-xs opacity-60 pb-1.5 font-bold uppercase">Cr</span>
                     </div>
@@ -80,6 +86,12 @@ export const VPDashboard: React.FC = () => {
 
                 {/* Right: Cause Stack & Secondary Charts */}
                 <div className="space-y-8">
+                    <CloseProjection
+                        nowCast={results.nowCast}
+                        plannedTotal={results.monthlyStats.find(m => m.month === config.asOfMonth)?.plannedOutflowTotal || 0}
+                        currentMonth={config.asOfMonth}
+                    />
+
                     <section className="bg-slate-900 border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
                         <div className="p-6 border-b border-white/5">
                             <h3 className="text-lg font-black text-white uppercase tracking-tighter flex items-center gap-2">

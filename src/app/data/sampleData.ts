@@ -7,10 +7,13 @@ export interface MonthRisk {
   probability: number;
   expectedShortfall: number;
   p80Shortfall: number;
-  scheduleDebt: number; // New
-  deferredCost: number; // New
+  scheduleDebt: number;
+  deferredCost: number;
+  gap?: number;
+  p80?: number;
   drivers: RiskDriver[];
 }
+
 
 export interface RiskDriver {
   id: string;

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { ProjectConfig, DeptAllocation, OutflowData, SimulationResults } from '../types';
+import type { ProjectConfig, DeptAllocation, OutflowData, SimulationResults, CurrentMonthActuals, RiskConfig } from '../types';
+import { DEFAULT_RISK_CONFIG } from '../types';
 import { addMonths, format, parse } from 'date-fns';
 
 const STORAGE_KEY = 'riskinflow_pro_v2_store';
@@ -53,14 +54,17 @@ export function useProjectStore() {
     const [config, setConfig] = useState<ProjectConfig>(() => loadFromStorage('config', DEFAULT_CONFIG));
     const [allocations, setAllocations] = useState<DeptAllocation>(() => loadFromStorage('allocations', SEED_ALLOCATIONS));
     const [plannedOutflows, setPlannedOutflows] = useState<OutflowData>(() => loadFromStorage('plannedOutflows', SEED_PLANNED));
+    const [engineeringDemand, setEngineeringDemand] = useState<OutflowData>(() => loadFromStorage('engineeringDemand', SEED_PLANNED));
     const [projectedOutflows, setProjectedOutflows] = useState<OutflowData>(() => loadFromStorage('projectedOutflows', SEED_PLANNED));
     const [actualOutflows, setActualOutflows] = useState<OutflowData>(() => loadFromStorage('actualOutflows', SEED_PLANNED)); // Start with seed for demo
     const [actualAllocations, setActualAllocations] = useState<DeptAllocation>(() => loadFromStorage('actualAllocations', SEED_ALLOCATIONS));
     const [activeScenarios, setActiveScenarios] = useState<string[]>([]); // Action IDs
+    const [currentMonthActuals, setCurrentMonthActuals] = useState<CurrentMonthActuals | undefined>(() => loadFromStorage('currentMonthActuals', undefined));
     const [results, setResults] = useState<SimulationResults | null>(null);
     const [loading, setLoading] = useState(false);
     const [volatilityFactor, setVolatilityFactor] = useState(1.0);
     const [corrStrength, setCorrStrength] = useState(0.5);
+    const [riskConfig, setRiskConfig] = useState<RiskConfig>(() => loadFromStorage('riskConfig', DEFAULT_RISK_CONFIG));
     const [isHydrated, setIsHydrated] = useState(false);
 
     const workerRef = useRef<Worker | null>(null);
@@ -77,10 +81,49 @@ export function useProjectStore() {
         setMonths(m);
     }, [config.startMonth, config.durationMonths]);
 
+    // Initialize Current Month Actuals when config changes
+    useEffect(() => {
+        setCurrentMonthActuals((prev: CurrentMonthActuals | undefined) => {
+            if (prev && prev.currentMonth === config.asOfMonth) return prev;
+            return {
+                currentMonth: config.asOfMonth,
+                actualPaidToDate: { SERVICE: 0, MATERIAL: 0, INFRA: 0 },
+                elapsedProgress: 0.5,
+                commitmentsToDate: undefined,
+                committedPOValue: 0,
+                physicalProgressPct: 0,
+                plannedProgressPct: 0,
+                estimateToComplete: 0,
+            };
+        });
+    }, [config.asOfMonth]);
+
     // Mark hydration complete after first render
     useEffect(() => {
         setIsHydrated(true);
     }, []);
+
+    // ONE-TIME MIGRATION: If engineeringDemand is empty but plannedOutflows has data, use plannedOutflows
+    useEffect(() => {
+        if (!isHydrated) return;
+
+        // If engineeringDemand is using seed but plannedOutflows has user data (simple proxy check)
+        // Ideally we check if engineeringDemand is empty in storage, but here we can just sync if engineeringDemand is "default"
+        // For safe migration, let's just ensure if engineeringDemand is missing keys that plannedOutflows has, we copy.
+        // Simplified: We'll rely on loadFromStorage('engineeringDemand', SEED_PLANNED) to pick up if exists.
+        // If it doesn't exist, it defaults to SEED_PLANNED. 
+        // If users have customized plannedOutflows, we might want to copy that over once.
+
+        // Let's do a smart init: if engineeringDemand is identical to SEED_PLANNED (reference or value) 
+        // AND plannedOutflows is NOT SEED_PLANNED, copy plannedOutflows to engineeringDemand.
+
+        const isSeed = (data: OutflowData) => JSON.stringify(data) === JSON.stringify(SEED_PLANNED);
+
+        if (isSeed(engineeringDemand) && !isSeed(plannedOutflows)) {
+            console.log('Migrating plannedOutflows to engineeringDemand...');
+            setEngineeringDemand(JSON.parse(JSON.stringify(plannedOutflows)));
+        }
+    }, [isHydrated]); // Run once on hydration
 
     // Save to LocalStorage (only after hydration)
     // Save to LocalStorage (debounced)
@@ -89,16 +132,22 @@ export function useProjectStore() {
 
         const handler = setTimeout(() => {
             localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                config, allocations, plannedOutflows, projectedOutflows, actualOutflows
+                config, allocations, plannedOutflows, engineeringDemand, projectedOutflows, actualOutflows, currentMonthActuals, riskConfig
             }));
         }, 1000);
 
         return () => clearTimeout(handler);
-    }, [config, allocations, plannedOutflows, projectedOutflows, actualOutflows, isHydrated]);
+    }, [config, allocations, plannedOutflows, engineeringDemand, projectedOutflows, actualOutflows, currentMonthActuals, riskConfig, isHydrated]);
 
 
     const triggerSimulation = useCallback(() => {
-        if (!plannedOutflows || Object.keys(plannedOutflows).length === 0) return;
+        // We now require engineeringDemand to be present for updated logic, 
+        // but fallback to plannedOutflows if engineeringDemand is empty (backward compatibility)
+        const activeDemand = (engineeringDemand && Object.keys(engineeringDemand).length > 0)
+            ? engineeringDemand
+            : plannedOutflows;
+
+        if (!activeDemand || Object.keys(activeDemand).length === 0) return;
 
         setLoading(true);
         if (workerRef.current) {
@@ -116,14 +165,18 @@ export function useProjectStore() {
             config,
             allocations,
             actualAllocations,
-            plannedOutflows,
+            plannedOutflows, // Still passed for baseline comparison
+            engineeringDemand: activeDemand, // Passed for active simulation
             actualOutflows,
+            currentMonthActuals, // Now passing this!
+            riskConfig, // High-Fidelity Risk Config
             volatilityFactor,
             corrStrength,
             iterations: 5000,
             activeScenarios
         });
-    }, [config, allocations, plannedOutflows, volatilityFactor, corrStrength]);
+        console.log('[Store] Triggering simulation with riskConfig:', riskConfig);
+    }, [config, allocations, plannedOutflows, engineeringDemand, actualOutflows, currentMonthActuals, riskConfig, volatilityFactor, corrStrength, activeScenarios]);
 
     // Auto-trigger simulation (debounced)
     useEffect(() => {
@@ -142,9 +195,10 @@ export function useProjectStore() {
         }));
     };
 
-    const updateOutflow = (dataset: 'planned' | 'projected' | 'actual', month: string, entity: string, activity: string, component: string, value: number) => {
+    const updateOutflow = (dataset: 'planned' | 'engineering' | 'projected' | 'actual', month: string, entity: string, activity: string, component: string, value: number) => {
         const setters: Record<string, any> = {
             planned: setPlannedOutflows,
+            engineering: setEngineeringDemand,
             projected: setProjectedOutflows,
             actual: setActualOutflows
         };
@@ -172,8 +226,18 @@ export function useProjectStore() {
                 return next;
             });
         } else {
-            const setters: Record<string, any> = { planned: setPlannedOutflows, projected: setProjectedOutflows, actual: setActualOutflows };
-            const sourceData = (dataset === 'planned' ? plannedOutflows : dataset === 'projected' ? projectedOutflows : actualOutflows)[sourceMonth] || {};
+            const setters: Record<string, any> = {
+                planned: setPlannedOutflows,
+                engineering: setEngineeringDemand,
+                projected: setProjectedOutflows,
+                actual: setActualOutflows
+            };
+            // Default to engineering if dataset is 'engineering', otherwise match logic
+            const sourceStore = (dataset === 'planned' ? plannedOutflows :
+                dataset === 'engineering' ? engineeringDemand :
+                    dataset === 'projected' ? projectedOutflows : actualOutflows);
+
+            const sourceData = sourceStore[sourceMonth] || {};
             setters[dataset]((prev: OutflowData) => {
                 const next = { ...prev };
                 targetMonths.forEach(m => { next[m] = JSON.parse(JSON.stringify(sourceData)); });
@@ -196,7 +260,12 @@ export function useProjectStore() {
                 return next;
             });
         } else {
-            const setters: Record<string, any> = { planned: setPlannedOutflows, projected: setProjectedOutflows, actual: setActualOutflows };
+            const setters: Record<string, any> = {
+                planned: setPlannedOutflows,
+                engineering: setEngineeringDemand,
+                projected: setProjectedOutflows,
+                actual: setActualOutflows
+            };
             setters[dataset]((prev: OutflowData) => {
                 const next = JSON.parse(JSON.stringify(prev));
                 targetMonths.forEach(m => {
@@ -229,10 +298,13 @@ export function useProjectStore() {
         config, updateConfig,
         allocations, updateAllocation,
         plannedOutflows, setPlannedOutflows,
+        engineeringDemand, setEngineeringDemand,
         projectedOutflows, setProjectedOutflows,
         actualOutflows, setActualOutflows,
         actualAllocations, setActualAllocations,
+        currentMonthActuals, setCurrentMonthActuals,
         activeScenarios, toggleScenario, resetScenarios,
+        riskConfig, setRiskConfig,
         updateOutflow,
         copyRange, applyFactor,
         months,

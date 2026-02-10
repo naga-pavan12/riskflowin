@@ -14,7 +14,7 @@ export function EngineeringDemand() {
   const {
     config,
     months,
-    plannedOutflows,
+    engineeringDemand, // Changed from plannedOutflows
     updateOutflow,
     copyRange
   } = useProjectStore();
@@ -45,10 +45,10 @@ export function EngineeringDemand() {
   const getActivityTotal = (activity: string, month: string): ComponentValues => {
     const totals: ComponentValues = { SERVICE: 0, MATERIAL: 0, INFRA: 0 };
 
-    if (!plannedOutflows[month]) return totals;
+    if (!engineeringDemand?.[month]) return totals; // Use engineeringDemand
 
     entities.forEach(entity => {
-      const entityData = plannedOutflows[month]?.[entity]?.[activity];
+      const entityData = engineeringDemand[month]?.[entity]?.[activity];
       if (entityData) {
         totals.SERVICE += entityData.SERVICE || 0;
         totals.MATERIAL += entityData.MATERIAL || 0;
@@ -61,7 +61,7 @@ export function EngineeringDemand() {
 
   // Get component values for a specific entity/activity
   const getComponentValues = (entity: string, activity: string, month: string): ComponentValues => {
-    const data = plannedOutflows[month]?.[entity]?.[activity];
+    const data = engineeringDemand?.[month]?.[entity]?.[activity]; // Use engineeringDemand
     return {
       SERVICE: data?.SERVICE || 0,
       MATERIAL: data?.MATERIAL || 0,
@@ -84,7 +84,7 @@ export function EngineeringDemand() {
   const handleCopyPrevious = () => {
     if (selectedMonthIdx > 0) {
       const prevMonth = months[selectedMonthIdx - 1];
-      copyRange('OUTFLOW', 'planned', prevMonth, [selectedMonth]);
+      copyRange('OUTFLOW', 'engineering', prevMonth, [selectedMonth]); // Target engineering
       setHasChanges(true);
     }
   };
@@ -95,8 +95,8 @@ export function EngineeringDemand() {
     component: 'SERVICE' | 'MATERIAL' | 'INFRA',
     value: number
   ) => {
-    updateOutflow('planned', selectedMonth, entity, activity, component, value);
-    setHasChanges(true);
+    updateOutflow('engineering', selectedMonth, entity, activity, component, value); // Target engineering
+    setHasChanges(true); // Keep local change tracking (even though store updates immediately)
   };
 
   const handleSave = () => {

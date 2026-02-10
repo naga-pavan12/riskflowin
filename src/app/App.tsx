@@ -11,7 +11,8 @@ import { InflowPlan } from './components/config/InflowPlan';
 import { EngineeringDemand } from './components/config/EngineeringDemand';
 import { ForecastBaseline } from './components/config/ForecastBaseline';
 import { RecordedActuals } from './components/config/RecordedActuals';
-import { ExecutiveConsole } from './components/dashboard/ExecutiveConsole';
+import { CurrentMonthActuals } from './components/config/CurrentMonthActuals';
+import { RiskSetup } from './components/config/RiskSetup';
 // Design tokens moved to artifact: .gemini/antigravity/brain/<conversation-id>/design-system.md
 import { type MonthRisk } from './data/sampleData';
 
@@ -45,8 +46,10 @@ export default function App() {
         return <ForecastBaseline />;
       case 'recorded-actuals':
         return <RecordedActuals />;
-      case 'executive-console':
-        return <ExecutiveConsole />;
+      case 'current-month-actuals':
+        return <CurrentMonthActuals />;
+      case 'risk-setup':
+        return <RiskSetup />;
       // Design tokens view removed - see design-system.md artifact
       default:
         return <Dashboard onMonthClick={handleMonthClick} />;

@@ -216,12 +216,12 @@ export function RecordedActuals() {
             key={month}
             onClick={() => setSelectedMonthIdx(idx)}
             className={`
-px - 4 py - 2 rounded - [var(--radius - md)]text - [14px] font - medium transition - all whitespace - nowrap
+              px-4 py-2 rounded-[var(--radius-md)] text-[14px] font-medium transition-all whitespace-nowrap
               ${selectedMonthIdx === idx
                 ? 'bg-[var(--accent-blue)] text-white'
                 : 'bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--divider)]'
               }
-`}
+            `}
           >
             {formatMonth(month)}
           </button>
