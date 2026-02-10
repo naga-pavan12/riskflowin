@@ -24,6 +24,14 @@ export function RecordedActuals() {
 
   const [hasChanges, setHasChanges] = useState(false);
   const [selectedMonthIdx, setSelectedMonthIdx] = useState(0);
+
+  // Auto-select Current Month on load
+  React.useEffect(() => {
+    if (months.length > 0 && config.asOfMonth) {
+      const idx = months.indexOf(config.asOfMonth);
+      if (idx !== -1) setSelectedMonthIdx(idx);
+    }
+  }, [months, config.asOfMonth]);
   const [expandedActivities, setExpandedActivities] = useState<Set<string>>(
     new Set(config.activities.length > 0 ? [config.activities[0]] : [])
   );
@@ -34,6 +42,9 @@ export function RecordedActuals() {
 
   // Current selected month
   const selectedMonth = months[selectedMonthIdx] || '';
+  const isEditable = selectedMonth === config.asOfMonth;
+  const isHistorical = selectedMonth < config.asOfMonth;
+  const isFuture = selectedMonth > config.asOfMonth;
 
   // Format month for display
   const formatMonth = (month: string) => {
@@ -194,12 +205,12 @@ export function RecordedActuals() {
         </div>
       )}
 
-      <div>
+      <div className="space-y-4">
         <div className="flex items-start justify-between">
           <div>
             <h2 className="mb-2">Actual Outflow</h2>
             <p className="text-[var(--text-secondary)]">
-              Enter actual spending data as it becomes available
+              Enter actual spending data for the <strong className="text-white">Current Month</strong> only.
             </p>
           </div>
           <div className="flex items-center gap-2 text-[var(--text-tertiary)] text-[13px]">
@@ -207,6 +218,25 @@ export function RecordedActuals() {
             <span>Last updated: {format(new Date(), 'MMM d, yyyy HH:mm')}</span>
           </div>
         </div>
+
+        {/* Status Banner */}
+        {isHistorical && (
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 flex items-center gap-3">
+            <Clock className="w-5 h-5 text-amber-500" />
+            <span className="text-amber-200 text-sm font-medium">Historical Month: Data is read-only. Modifications should be made via change orders.</span>
+          </div>
+        )}
+        {isFuture && (
+          <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-3 flex items-center gap-3">
+            <span className="text-slate-400 text-sm font-medium pl-1">Future Month: Locked for actuals entry.</span>
+          </div>
+        )}
+        {isEditable && (
+          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-emerald-200 text-sm font-medium">Current Month: Open for data entry.</span>
+          </div>
+        )}
       </div>
 
       {/* Month Selector */}
@@ -340,7 +370,8 @@ export function RecordedActuals() {
                               value={actuals.SERVICE || ''}
                               placeholder="0"
                               onChange={(e) => handleValueChange(entity, activity, 'SERVICE', parseFloat(e.target.value) || 0)}
-                              className="w-full px-3 py-2 bg-[var(--surface-base)] border border-[var(--divider)] rounded-[var(--radius-md)] text-[var(--text-primary)] text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)]"
+                              disabled={!isEditable}
+                              className={`w-full px-3 py-2 bg-[var(--surface-base)] border border-[var(--divider)] rounded-[var(--radius-md)] text-[var(--text-primary)] text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)] disabled:opacity-50 disabled:cursor-not-allowed`}
                             />
                           </div>
                           <div>
@@ -354,7 +385,8 @@ export function RecordedActuals() {
                               value={actuals.MATERIAL || ''}
                               placeholder="0"
                               onChange={(e) => handleValueChange(entity, activity, 'MATERIAL', parseFloat(e.target.value) || 0)}
-                              className="w-full px-3 py-2 bg-[var(--surface-base)] border border-[var(--divider)] rounded-[var(--radius-md)] text-[var(--text-primary)] text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)]"
+                              disabled={!isEditable}
+                              className={`w-full px-3 py-2 bg-[var(--surface-base)] border border-[var(--divider)] rounded-[var(--radius-md)] text-[var(--text-primary)] text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)] disabled:opacity-50 disabled:cursor-not-allowed`}
                             />
                           </div>
                           <div>
@@ -368,7 +400,8 @@ export function RecordedActuals() {
                               value={actuals.INFRA || ''}
                               placeholder="0"
                               onChange={(e) => handleValueChange(entity, activity, 'INFRA', parseFloat(e.target.value) || 0)}
-                              className="w-full px-3 py-2 bg-[var(--surface-base)] border border-[var(--divider)] rounded-[var(--radius-md)] text-[var(--text-primary)] text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)]"
+                              disabled={!isEditable}
+                              className={`w-full px-3 py-2 bg-[var(--surface-base)] border border-[var(--divider)] rounded-[var(--radius-md)] text-[var(--text-primary)] text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)] disabled:opacity-50 disabled:cursor-not-allowed`}
                             />
                           </div>
                         </div>
