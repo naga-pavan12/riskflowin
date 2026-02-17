@@ -164,18 +164,18 @@ export function SimpleDrawer({
 
       {/* Drawer Panel */}
       <div
-        className="fixed inset-y-0 right-0 z-50 flex flex-col bg-[var(--surface-base)] border-l border-[var(--divider)] shadow-xl animate-in slide-in-from-right"
-        style={{ width }}
+        className="fixed inset-y-0 right-0 z-50 flex flex-col bg-white border-l border-zinc-200 shadow-2xl animate-in slide-in-from-right"
+        style={{ width: width || '40%' }}
       >
         {/* Header */}
         {title && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--divider)]">
-            <h2 className="text-[var(--text-primary)] font-semibold text-[18px]">
+          <div className="flex items-center justify-between px-6 py-5 border-b border-zinc-100 bg-zinc-50/50">
+            <h2 className="text-black font-bold text-lg tracking-tight">
               {title}
             </h2>
             <button
               onClick={onClose}
-              className="p-2 rounded-[var(--radius-sm)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-elevated)] transition-colors"
+              className="p-2 rounded-full text-zinc-500 hover:text-black hover:bg-zinc-200 transition-colors"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -191,7 +191,7 @@ export function SimpleDrawer({
 
         {/* Footer */}
         {footer && (
-          <div className="px-6 py-4 border-t border-[var(--divider)]">
+          <div className="px-6 py-4 border-t border-zinc-100 bg-zinc-50/30">
             {footer}
           </div>
         )}

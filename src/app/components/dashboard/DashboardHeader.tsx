@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { RefreshCw, Download, Share2, ChevronDown, ChevronUp } from 'lucide-react';
 import { clsx } from 'clsx';
+import { Button } from '../ui/button';
 
 interface DashboardHeaderProps {
     volatility: number;
@@ -17,51 +18,53 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     const [showAdvanced, setShowAdvanced] = useState(false);
 
     return (
-        <div className="exec-card p-5 space-y-4">
+        <div className="bg-white border border-zinc-200 rounded-lg shadow-sm p-5 space-y-4 mb-6">
             {/* Top Row: Title + Actions */}
             <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                    <button
+                    <Button
                         onClick={onRefresh}
                         disabled={loading}
-                        className={clsx(
-                            "flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all",
-                            "bg-brand text-white hover:opacity-90 disabled:opacity-50"
-                        )}
+                        className="bg-black text-white hover:bg-zinc-800 disabled:opacity-50"
                     >
-                        <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+                        <RefreshCw size={16} className={clsx("mr-2", loading ? 'animate-spin' : '')} />
                         {loading ? 'Running...' : 'Refresh Forecast'}
-                    </button>
+                    </Button>
 
                     {/* Advanced Toggle */}
-                    <button
+                    <Button
+                        variant="outline"
                         onClick={() => setShowAdvanced(!showAdvanced)}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-text-muted border border-border-soft hover:bg-bg-elevated transition-all"
+                        className="flex items-center gap-2 border-zinc-200 text-zinc-600 hover:text-black hover:bg-zinc-50"
                     >
                         {showAdvanced ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                         {showAdvanced ? 'Hide Parameters' : 'Advanced'}
-                    </button>
+                    </Button>
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <button
-                        className="p-2.5 rounded-lg border border-border-soft text-text-muted hover:text-text-primary hover:bg-bg-elevated transition-all"
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        className="border-zinc-200 text-zinc-400 hover:text-black hover:bg-zinc-50"
                         title="Share"
                     >
                         <Share2 size={16} />
-                    </button>
-                    <button
-                        className="p-2.5 rounded-lg border border-border-soft text-text-muted hover:text-text-primary hover:bg-bg-elevated transition-all"
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        className="border-zinc-200 text-zinc-400 hover:text-black hover:bg-zinc-50"
                         title="Export"
                     >
                         <Download size={16} />
-                    </button>
+                    </Button>
                 </div>
             </div>
 
             {/* Advanced Sliders (Collapsible) */}
             {showAdvanced && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-border-soft">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-zinc-100">
                     <SliderControl
                         label="Demand Volatility"
                         value={volatility}
@@ -104,10 +107,10 @@ const SliderControl: React.FC<{
     lowLabel: string;
     highLabel: string;
 }> = ({ label, value, min, max, step, onChange, displayValue, lowLabel, highLabel }) => (
-    <div className="space-y-2">
+    <div className="space-y-3">
         <div className="flex justify-between items-center">
-            <label className="exec-label">{label}</label>
-            <span className="text-sm font-semibold text-brand tabular-nums">{displayValue}</span>
+            <label className="text-sm font-bold text-zinc-700 uppercase tracking-wide">{label}</label>
+            <span className="text-sm font-bold text-black tabular-nums bg-zinc-100 px-2 py-0.5 rounded">{displayValue}</span>
         </div>
         <input
             type="range"
@@ -116,9 +119,9 @@ const SliderControl: React.FC<{
             step={step}
             value={value}
             onChange={e => onChange(parseFloat(e.target.value))}
-            className="w-full"
+            className="w-full accent-black h-1.5 bg-zinc-200 rounded-lg appearance-none cursor-pointer"
         />
-        <div className="flex justify-between text-[10px] text-text-muted">
+        <div className="flex justify-between text-[10px] font-medium text-zinc-400 uppercase tracking-wider">
             <span>{lowLabel}</span>
             <span>{highLabel}</span>
         </div>

@@ -13,7 +13,7 @@ export const AllocationsTab: React.FC = () => {
     const [activeMonth, setActiveMonth] = useState(months[0]);
     const [factor, setFactor] = useState(1.1);
 
-    const depts: DeptType[] = ['ENGINEERING', 'MARKETING', 'OTHERS'];
+    const depts: DeptType[] = ['ENGINEERING'];
 
     const getMonthTotal = (m: string) =>
         depts.reduce((sum, d) => sum + (data[m]?.[d] || 0), 0);

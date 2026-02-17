@@ -1,8 +1,6 @@
-
-import React, { useState, useMemo } from 'react';
-import { Save, Copy, ChevronDown, ChevronRight, Upload, Clock } from 'lucide-react';
+import React, { useState } from 'react';
+import { Save, Copy, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
 import { useProjectStore } from '../../../store/useProjectStore';
 import { format, parse } from 'date-fns';
 
@@ -17,8 +15,8 @@ export function RecordedActuals() {
     config,
     months,
     actualOutflows,
+    setActualOutflows,
     plannedOutflows,
-    updateOutflow,
     copyRange
   } = useProjectStore();
 
@@ -32,6 +30,7 @@ export function RecordedActuals() {
       if (idx !== -1) setSelectedMonthIdx(idx);
     }
   }, [months, config.asOfMonth]);
+
   const [expandedActivities, setExpandedActivities] = useState<Set<string>>(
     new Set(config.activities.length > 0 ? [config.activities[0]] : [])
   );
@@ -42,8 +41,8 @@ export function RecordedActuals() {
 
   // Current selected month
   const selectedMonth = months[selectedMonthIdx] || '';
-  const isEditable = selectedMonth === config.asOfMonth;
-  const isHistorical = selectedMonth < config.asOfMonth;
+  // Limit selection to historical months (<= asOfMonth)
+  const asOfIndex = months.indexOf(config.asOfMonth);
   const isFuture = selectedMonth > config.asOfMonth;
 
   // Format month for display
@@ -78,26 +77,19 @@ export function RecordedActuals() {
   // Calculate totals for an activity across all entities
   const getActivityTotal = (activity: string, month: string, type: 'actual' | 'forecast'): number => {
     const outflows = type === 'actual' ? actualOutflows : plannedOutflows;
-    if (!outflows[month]) return 0;
-
     let total = 0;
+
+    if (!outflows?.[month]) return 0;
+
     entities.forEach(entity => {
-      const entityData = outflows[month]?.[entity]?.[activity];
-      if (entityData) {
-        total += (entityData.SERVICE || 0) + (entityData.MATERIAL || 0) + (entityData.INFRA || 0);
+      const data = outflows[month]?.[entity]?.[activity];
+      if (data) {
+        total += (data.SERVICE || 0) + (data.MATERIAL || 0) + (data.INFRA || 0);
       }
     });
 
     return total;
   };
-
-  // Count months without actuals
-  const monthsWithoutActuals = useMemo(() => {
-    return months.filter(month => {
-      const hasData = Object.keys(actualOutflows[month] || {}).length > 0;
-      return !hasData;
-    }).length;
-  }, [months, actualOutflows]);
 
   const toggleActivity = (activity: string) => {
     setExpandedActivities(prev => {
@@ -111,12 +103,16 @@ export function RecordedActuals() {
     });
   };
 
-  const handleCopyPrevious = () => {
-    if (selectedMonthIdx > 0) {
-      const prevMonth = months[selectedMonthIdx - 1];
-      copyRange('OUTFLOW', 'actual', prevMonth, [selectedMonth]);
-      setHasChanges(true);
-    }
+  const handleCopyForecast = () => {
+    // Copy planned values to actuals for this month
+    setActualOutflows((prev: any) => {
+      const next = { ...prev };
+      if (plannedOutflows[selectedMonth]) {
+        next[selectedMonth] = JSON.parse(JSON.stringify(plannedOutflows[selectedMonth]));
+      }
+      return next;
+    });
+    setHasChanges(true);
   };
 
   const handleValueChange = (
@@ -125,16 +121,20 @@ export function RecordedActuals() {
     component: 'SERVICE' | 'MATERIAL' | 'INFRA',
     value: number
   ) => {
-    updateOutflow('actual', selectedMonth, entity, activity, component, value);
+    setActualOutflows((prev: any) => ({
+      ...prev,
+      [selectedMonth]: {
+        ...(prev[selectedMonth] || {}),
+        [entity]: {
+          ...(prev[selectedMonth]?.[entity] || {}),
+          [activity]: {
+            ...(prev[selectedMonth]?.[entity]?.[activity] || {}),
+            [component]: value
+          }
+        }
+      }
+    }));
     setHasChanges(true);
-  };
-
-  const handleSave = () => {
-    setHasChanges(false);
-  };
-
-  const handleDiscard = () => {
-    setHasChanges(false);
   };
 
   const formatCurrency = (value: number) => {
@@ -143,32 +143,19 @@ export function RecordedActuals() {
     return `₹${value.toFixed(2)} Cr`;
   };
 
-  // Calculate variance percentage
-  const getVariance = (actual: number, forecast: number): { value: number; color: string } => {
-    if (forecast === 0) return { value: 0, color: 'text-[var(--text-tertiary)]' };
-    const variance = ((actual - forecast) / forecast) * 100;
-    return {
-      value: variance,
-      color: variance < 0 ? 'text-emerald-400' : variance > 0 ? 'text-rose-400' : 'text-[var(--text-tertiary)]'
-    };
-  };
-
   // Empty state
   if (activities.length === 0) {
     return (
       <div className="max-w-7xl space-y-8">
         <div>
-          <h2 className="mb-2">Actual Outflow</h2>
-          <p className="text-[var(--text-secondary)]">
-            Enter actual spending data as it becomes available
+          <h2 className="text-2xl font-bold text-black mb-2">Recorded Actuals</h2>
+          <p className="text-zinc-500">
+            Record actual spend by activity and component type
           </p>
         </div>
-        <div className="flex items-center justify-center h-[40vh]">
-          <div className="text-center">
-            <div className="text-[var(--text-secondary)] text-[16px] mb-2">No activities configured</div>
-            <div className="text-[var(--text-tertiary)] text-[13px]">
-              Add activities in Project Setup to record actuals
-            </div>
+        <div className="flex items-center justify-center h-[40vh] bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
+          <div className="text-zinc-400 text-sm">
+            No activities configured
           </div>
         </div>
       </div>
@@ -176,268 +163,202 @@ export function RecordedActuals() {
   }
 
   return (
-    <div className="max-w-7xl space-y-8">
+    <div className="max-w-7xl space-y-8 pb-24">
       {/* Unsaved Changes Bar */}
       {hasChanges && (
-        <div className="fixed bottom-0 left-[240px] right-0 bg-[var(--accent-blue)] px-8 py-4 z-30 border-t border-blue-400/20">
-          <div className="flex items-center justify-between max-w-7xl">
+        <div className="fixed bottom-0 left-[260px] right-0 bg-black px-8 py-4 z-30 border-t border-zinc-800 shadow-xl">
+          <div className="flex items-center justify-between max-w-7xl mx-auto">
             <span className="text-white font-medium">You have unsaved changes</span>
-            <div className="flex gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleDiscard}
-                className="!text-white hover:!bg-white/10"
-              >
-                Discard
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleSave}
-                className="!bg-white !text-[var(--accent-blue)]"
-              >
-                <Save className="w-4 h-4" />
-                Save Changes
-              </Button>
-            </div>
+            <Button
+              size="sm"
+              onClick={() => setHasChanges(false)}
+              className="bg-white text-black hover:bg-zinc-200"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Save Changes
+            </Button>
           </div>
         </div>
       )}
 
-      <div className="space-y-4">
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="mb-2">Actual Outflow</h2>
-            <p className="text-[var(--text-secondary)]">
-              Enter actual spending data for the <strong className="text-white">Current Month</strong> only.
-            </p>
-          </div>
-          <div className="flex items-center gap-2 text-[var(--text-tertiary)] text-[13px]">
-            <Clock className="w-4 h-4" />
-            <span>Last updated: {format(new Date(), 'MMM d, yyyy HH:mm')}</span>
-          </div>
-        </div>
-
-        {/* Status Banner */}
-        {isHistorical && (
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 flex items-center gap-3">
-            <Clock className="w-5 h-5 text-amber-500" />
-            <span className="text-amber-200 text-sm font-medium">Historical Month: Data is read-only. Modifications should be made via change orders.</span>
-          </div>
-        )}
-        {isFuture && (
-          <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-3 flex items-center gap-3">
-            <span className="text-slate-400 text-sm font-medium pl-1">Future Month: Locked for actuals entry.</span>
-          </div>
-        )}
-        {isEditable && (
-          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 flex items-center gap-3">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-emerald-200 text-sm font-medium">Current Month: Open for data entry.</span>
-          </div>
-        )}
+      <div>
+        <h2 className="text-2xl font-bold text-black mb-2">Recorded Actuals</h2>
+        <p className="text-zinc-500">
+          Record actual spend vs plan. Future months are read-only.
+        </p>
       </div>
 
-      {/* Month Selector */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2">
-        {months.map((month, idx) => (
-          <button
-            key={month}
-            onClick={() => setSelectedMonthIdx(idx)}
-            className={`
-              px-4 py-2 rounded-[var(--radius-md)] text-[14px] font-medium transition-all whitespace-nowrap
-              ${selectedMonthIdx === idx
-                ? 'bg-[var(--accent-blue)] text-white'
-                : 'bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--divider)]'
-              }
-            `}
-          >
-            {formatMonth(month)}
-          </button>
-        ))}
+      {/* Month Selector used as tabs */}
+      <div className="border-b border-zinc-200">
+        <div className="flex items-center gap-1 overflow-x-auto pb-0">
+          {months.slice(0, asOfIndex + 1).map((month, idx) => (
+            <button
+              key={month}
+              onClick={() => setSelectedMonthIdx(idx)}
+              className={`
+                px-4 py-3 text-sm font-medium transition-all whitespace-nowrap border-b-2
+                ${selectedMonthIdx === idx
+                  ? 'border-black text-black'
+                  : 'border-transparent text-zinc-500 hover:text-black hover:border-zinc-300'
+                }
+                `}
+            >
+              {formatMonth(month)}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Actions Bar */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 py-2">
         <Button
-          variant="secondary"
+          variant="outline"
           size="sm"
-          onClick={handleCopyPrevious}
-          disabled={selectedMonthIdx === 0}
+          onClick={handleCopyForecast}
+          className="border-zinc-300 text-black hover:bg-zinc-50"
         >
-          <Copy className="w-4 h-4" />
-          Copy from Previous Month
+          <Copy className="w-4 h-4 mr-2" />
+          Populate from Plan
         </Button>
-        <Button variant="secondary" size="sm" disabled>
-          <Upload className="w-4 h-4" />
-          Import CSV (coming soon)
-        </Button>
-        {monthsWithoutActuals > 0 && (
-          <div className="ml-auto">
-            <Badge variant="secondary">
-              {monthsWithoutActuals} months without actuals
-            </Badge>
-          </div>
-        )}
       </div>
 
       {/* Activities */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         {activities.map(activity => {
           const actualTotal = getActivityTotal(activity, selectedMonth, 'actual');
           const forecastTotal = getActivityTotal(activity, selectedMonth, 'forecast');
-          const variance = getVariance(actualTotal, forecastTotal);
+          const isExpanded = expandedActivities.has(activity);
 
           return (
             <div
               key={activity}
-              className="bg-[var(--surface-elevated)] rounded-[var(--radius-lg)] border border-[var(--divider)] overflow-hidden"
+              className={`bg-white rounded-lg border transition-all duration-200 ${isExpanded ? 'border-zinc-300 shadow-sm' : 'border-zinc-200 hover:border-zinc-300'}`}
             >
               {/* Activity Header */}
               <button
                 onClick={() => toggleActivity(activity)}
-                className="w-full px-6 py-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors border-b border-[var(--divider-subtle)]"
+                className="w-full px-6 py-5 flex items-center justify-between hover:bg-zinc-50 transition-colors rounded-t-lg"
               >
                 <div className="flex items-center gap-3">
-                  {expandedActivities.has(activity) ? (
-                    <ChevronDown className="w-4 h-4 text-[var(--text-secondary)]" />
+                  {isExpanded ? (
+                    <ChevronDown className="w-4 h-4 text-black" />
                   ) : (
-                    <ChevronRight className="w-4 h-4 text-[var(--text-secondary)]" />
+                    <ChevronRight className="w-4 h-4 text-zinc-400" />
                   )}
-                  <span className="text-[var(--text-primary)] font-medium">
+                  <span className="text-black font-bold text-base">
                     {activity}
                   </span>
                 </div>
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-8">
                   <div className="text-right">
-                    <div className="text-[var(--text-tertiary)] text-[11px] uppercase tracking-wide">
-                      Actual
+                    <div className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest mb-0.5">
+                      Planned
                     </div>
-                    <div className="text-[var(--text-primary)] font-semibold tabular-nums">
-                      {formatCurrency(actualTotal)}
+                    <div className="text-zinc-500 font-medium tabular-nums text-sm">
+                      {formatCurrency(forecastTotal)}
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-[var(--text-tertiary)] text-[11px] uppercase tracking-wide">
-                      vs Forecast
+                    <div className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest mb-0.5">
+                      Actual
                     </div>
-                    <div className={`font - semibold tabular - nums ${variance.color} `}>
-                      {variance.value > 0 ? '+' : ''}{variance.value.toFixed(0)}%
+                    <div className="text-black font-bold tabular-nums text-lg">
+                      {formatCurrency(actualTotal)}
                     </div>
                   </div>
                 </div>
               </button>
 
-              {/* Expanded Content - By Entity */}
-              {expandedActivities.has(activity) && (
-                <div className="p-6 space-y-6">
+              {/* Expanded Content - Show by Entity */}
+              {isExpanded && (
+                <div className="p-6 space-y-6 border-t border-zinc-100 bg-zinc-50/50 rounded-b-lg">
                   {entities.map(entity => {
                     const actuals = getActualValues(entity, activity, selectedMonth);
-                    const forecasts = getForecastValues(entity, activity, selectedMonth);
-                    const entityActualTotal = actuals.SERVICE + actuals.MATERIAL + actuals.INFRA;
-                    const entityForecastTotal = forecasts.SERVICE + forecasts.MATERIAL + forecasts.INFRA;
-                    const entityVariance = getVariance(entityActualTotal, entityForecastTotal);
+                    const forecast = getForecastValues(entity, activity, selectedMonth);
+                    const entityTotal = actuals.SERVICE + actuals.MATERIAL + actuals.INFRA;
 
                     return (
-                      <div key={entity} className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[var(--text-secondary)] text-[13px] font-medium">
+                      <div key={entity} className="space-y-3 bg-white p-5 rounded border border-zinc-200 shadow-sm">
+                        <div className="flex items-center justify-between mb-3 border-b border-zinc-50 pb-2">
+                          <span className="text-zinc-700 text-sm font-bold uppercase tracking-wide">
                             {entity}
                           </span>
-                          <div className="flex items-center gap-4 text-[12px]">
-                            <span className="text-[var(--text-tertiary)]">
-                              Actual: {formatCurrency(entityActualTotal)}
-                            </span>
-                            <span className="text-[var(--text-tertiary)]">
-                              Forecast: {formatCurrency(entityForecastTotal)}
-                            </span>
-                            <span className={entityVariance.color}>
-                              {entityVariance.value > 0 ? '+' : ''}{entityVariance.value.toFixed(0)}%
-                            </span>
-                          </div>
+                          <span className="text-zinc-400 text-xs font-medium tabular-nums">
+                            Actual Subtotal: <span className="text-black font-bold">{formatCurrency(entityTotal)}</span>
+                          </span>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-4">
+                        {/* Component Inputs */}
+                        <div className="grid grid-cols-3 gap-6">
+                          {/* Service */}
                           <div>
-                            <label className="block text-[var(--text-tertiary)] text-[12px] mb-1.5">
-                              Service (₹ Cr)
-                            </label>
-                            <input
-                              type="number"
-                              step="0.1"
-                              min="0"
-                              value={actuals.SERVICE || ''}
-                              placeholder="0"
-                              onChange={(e) => handleValueChange(entity, activity, 'SERVICE', parseFloat(e.target.value) || 0)}
-                              disabled={!isEditable}
-                              className={`w-full px-3 py-2 bg-[var(--surface-base)] border border-[var(--divider)] rounded-[var(--radius-md)] text-[var(--text-primary)] text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)] disabled:opacity-50 disabled:cursor-not-allowed`}
-                            />
+                            <div className="flex justify-between mb-1.5">
+                              <label className="block text-zinc-500 text-xs font-bold uppercase">
+                                Service
+                              </label>
+                              <span className="text-[10px] text-zinc-400">Plan: {forecast.SERVICE.toFixed(1)}</span>
+                            </div>
+                            <div className="relative">
+                              <span className="absolute left-3 top-2.5 text-zinc-400 text-sm">₹</span>
+                              <input
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                value={actuals.SERVICE || ''}
+                                onChange={(e) => handleValueChange(entity, activity, 'SERVICE', parseFloat(e.target.value) || 0)}
+                                className="w-full pl-6 pr-3 py-2 bg-zinc-50 border border-zinc-200 rounded text-black text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all font-medium"
+                              />
+                            </div>
                           </div>
+                          {/* Material */}
                           <div>
-                            <label className="block text-[var(--text-tertiary)] text-[12px] mb-1.5">
-                              Material (₹ Cr)
-                            </label>
-                            <input
-                              type="number"
-                              step="0.1"
-                              min="0"
-                              value={actuals.MATERIAL || ''}
-                              placeholder="0"
-                              onChange={(e) => handleValueChange(entity, activity, 'MATERIAL', parseFloat(e.target.value) || 0)}
-                              disabled={!isEditable}
-                              className={`w-full px-3 py-2 bg-[var(--surface-base)] border border-[var(--divider)] rounded-[var(--radius-md)] text-[var(--text-primary)] text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)] disabled:opacity-50 disabled:cursor-not-allowed`}
-                            />
+                            <div className="flex justify-between mb-1.5">
+                              <label className="block text-zinc-500 text-xs font-bold uppercase">
+                                Material
+                              </label>
+                              <span className="text-[10px] text-zinc-400">Plan: {forecast.MATERIAL.toFixed(1)}</span>
+                            </div>
+                            <div className="relative">
+                              <span className="absolute left-3 top-2.5 text-zinc-400 text-sm">₹</span>
+                              <input
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                value={actuals.MATERIAL || ''}
+                                onChange={(e) => handleValueChange(entity, activity, 'MATERIAL', parseFloat(e.target.value) || 0)}
+                                className="w-full pl-6 pr-3 py-2 bg-zinc-50 border border-zinc-200 rounded text-black text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all font-medium"
+                              />
+                            </div>
                           </div>
+                          {/* Infra */}
                           <div>
-                            <label className="block text-[var(--text-tertiary)] text-[12px] mb-1.5">
-                              Infra (₹ Cr)
-                            </label>
-                            <input
-                              type="number"
-                              step="0.1"
-                              min="0"
-                              value={actuals.INFRA || ''}
-                              placeholder="0"
-                              onChange={(e) => handleValueChange(entity, activity, 'INFRA', parseFloat(e.target.value) || 0)}
-                              disabled={!isEditable}
-                              className={`w-full px-3 py-2 bg-[var(--surface-base)] border border-[var(--divider)] rounded-[var(--radius-md)] text-[var(--text-primary)] text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)] disabled:opacity-50 disabled:cursor-not-allowed`}
-                            />
+                            <div className="flex justify-between mb-1.5">
+                              <label className="block text-zinc-500 text-xs font-bold uppercase">
+                                Infra
+                              </label>
+                              <span className="text-[10px] text-zinc-400">Plan: {forecast.INFRA.toFixed(1)}</span>
+                            </div>
+                            <div className="relative">
+                              <span className="absolute left-3 top-2.5 text-zinc-400 text-sm">₹</span>
+                              <input
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                value={actuals.INFRA || ''}
+                                onChange={(e) => handleValueChange(entity, activity, 'INFRA', parseFloat(e.target.value) || 0)}
+                                className="w-full pl-6 pr-3 py-2 bg-zinc-50 border border-zinc-200 rounded text-black text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all font-medium"
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
                     );
                   })}
-
-                  {/* Activity Summary */}
-                  <div className="flex items-center justify-between pt-4 border-t border-[var(--divider-subtle)]">
-                    <div className="text-[var(--text-tertiary)] text-[13px]">
-                      Total actual: <span className="text-[var(--text-primary)] font-semibold tabular-nums">{formatCurrency(actualTotal)}</span>
-                    </div>
-                    <div className="text-[var(--text-tertiary)] text-[13px]">
-                      Forecast was: <span className="text-[var(--text-secondary)] font-semibold tabular-nums">{formatCurrency(forecastTotal)}</span>
-                      <span className={`ml - 2 ${variance.color} `}>{variance.value > 0 ? '+' : ''}{variance.value.toFixed(0)}%</span>
-                    </div>
-                  </div>
                 </div>
               )}
             </div>
           );
         })}
-      </div>
-
-      {/* Month Summary */}
-      <div className="bg-[var(--surface-elevated)] rounded-[var(--radius-lg)] border border-[var(--divider)] p-6">
-        <div className="flex items-center justify-between">
-          <div className="text-[var(--text-secondary)] text-[14px]">
-            Total Actuals for {formatMonth(selectedMonth)}
-          </div>
-          <div className="text-[var(--text-primary)] text-[20px] font-semibold tabular-nums">
-            {formatCurrency(
-              activities.reduce((sum, act) => sum + getActivityTotal(act, selectedMonth, 'actual'), 0)
-            )}
-          </div>
-        </div>
       </div>
     </div>
   );

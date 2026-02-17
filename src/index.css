@@ -2,57 +2,58 @@
 
 :root {
   /* 
-    OBSIDIAN DESIGN SYSTEM
-    Solid, high-contrast, deep darks.
-    No blur. No transparency bleeding.
+    UBER BASE SYSTEM
+    Clean, High Contrast, Functional.
+    Solid Black & White. No Glass.
   */
 
-  /* Backgrounds - Solid & Deep */
-  --bg-app: #050505;
-  /* Almost pure black */
-  --bg-surface: #09090b;
-  /* Zinc-950 */
-  --bg-surface-hover: #18181b;
-  /* Zinc-900 */
-  --bg-surface-active: #27272a;
-  /* Zinc-800 */
-  --bg-elevated: #18181b;
-  /* Zinc-900 for cards/popovers */
+  /* Backgrounds - Solid & Flat */
+  --bg-app: #F6F6F6;
+  /* Light Gray Background */
+  --bg-surface: #FFFFFF;
+  /* Pure White Card */
+  --bg-surface-hover: #F9F9F9;
+  /* Very Light Gray Hover */
+  --bg-surface-active: #F3F3F3;
+  /* Light Gray Active */
 
-  /* Borders - Crisp & High Contrast */
-  --border-subtle: #27272a;
-  /* Zinc-800 */
-  --border-medium: #3f3f46;
-  /* Zinc-700 */
-  --border-highlight: #52525b;
-  /* Zinc-600 */
+  --bg-elevated: #FFFFFF;
 
-  /* Text - High Legibility */
-  --text-primary: #ffffff;
-  /* Pure White */
-  --text-secondary: #a1a1aa;
-  /* Zinc-400 */
-  --text-tertiary: #71717a;
-  /* Zinc-500 */
-  --text-muted: #52525b;
-  /* Zinc-600 */
+  /* Borders - Subtle & Refined */
+  --border-subtle: #E2E2E2;
+  /* Light Gray Border */
+  --border-medium: #D1D1D1;
+  /* Medium Gray Border */
+  --border-highlight: #000000;
+  /* Black Highlight */
 
-  /* Accents - Punchy & Neon-like */
-  --accent-blue: #3b82f6;
-  /* Blue-500 */
-  --accent-blue-dim: rgba(59, 130, 246, 0.1);
-  --accent-blue-glow: rgba(59, 130, 246, 0.5);
+  /* Text - High Contrast */
+  --text-primary: #000000;
+  /* Pure Black */
+  --text-secondary: #545454;
+  /* Dark Gray */
+  --text-tertiary: #757575;
+  /* Medium Gray */
+  --text-muted: #A1A1AA;
+  /* Light Gray */
 
-  --accent-emerald: #10b981;
-  /* Emerald-500 */
-  --accent-rose: #f43f5e;
-  /* Rose-500 */
-  --accent-amber: #f59e0b;
-  /* Amber-500 */
-  --accent-purple: #a855f7;
-  /* Purple-500 */
+  /* Accents - Functional Colors */
+  --accent-blue: #276EF1;
+  /* Uber Blue */
+  --accent-emerald: #05A357;
+  /* Uber Green */
+  --accent-rose: #E11900;
+  /* Uber Red */
+  --accent-amber: #FFC043;
+  /* Uber Yellow/Amber */
+  --accent-purple: #7356BF;
+  /* Uber Purple */
 
-  /* Semantic Variables for Tailwind */
+  --accent-blue-dim: rgba(39, 110, 241, 0.1);
+  --accent-blue-glow: transparent;
+  /* No Glow */
+
+  /* Tailwind Mappings */
   --color-bg-base: var(--bg-app);
   --color-bg-card: var(--bg-surface);
   --color-border-soft: var(--border-subtle);
@@ -61,18 +62,17 @@
 @layer base {
   body {
     background-color: var(--bg-app);
+    /* No glowing background image */
+    background-attachment: fixed;
     color: var(--text-primary);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* Subtle noise texture or radial for depth without muddy blur */
-    background-image: radial-gradient(circle at 50% 0%, #18181b 0%, #050505 60%);
-    background-attachment: fixed;
   }
 
   /* Improved Focus States */
   :focus-visible {
-    outline: 2px solid var(--accent-blue);
+    outline: 2px solid var(--text-primary);
     outline-offset: 2px;
     border-radius: 4px;
   }
@@ -80,25 +80,26 @@
 
 @layer components {
 
-  /* --- OBSIDIAN PANELS --- */
-  /* Replaces .glass-panel */
+  /* --- UBER BASE CARDS --- */
 
   .glass-panel {
     background: var(--bg-surface);
+    /* No backdrop filter */
     border: 1px solid var(--border-subtle);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
-    /* No backdrop-filter */
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    /* Subtle shadow */
+    /* Top highlight removed */
   }
 
   .glass-panel-hover {
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.2s ease-out;
   }
 
   .glass-panel-hover:hover {
     background: var(--bg-surface-hover);
     border-color: var(--border-medium);
     transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.7), 0 4px 6px -2px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   }
 
   /* --- TYPOGRAPHY --- */

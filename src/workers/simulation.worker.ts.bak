@@ -199,7 +199,20 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
 // MAIN SIMULATION
 // ============================================================================
 
+// ... (omitted) ...
 
+// Execution Overrun (already uses merged riskParams with confidence/contractor risk)
+// EXCLUDE MATERIAL: Material volatility covers price, Scope covers quantity. 
+// Overrun (Labor Inefficiency) applies mainly to Service/Infra.
+if (comp !== 'MATERIAL') {
+    let overrun = sampleNormal(rng, riskParams.overrun!.mean, riskParams.overrun!.sigma * volatilityFactor);
+    const overrunClamp = riskParams.overrun?.clampMax || 0.5;
+    overrun = clamp(overrun, -0.2, overrunClamp);
+
+    const valBeforeOverrun = val;
+    val *= (1 + overrun);
+    iterOverrunVar += (val - valBeforeOverrun);
+}
 interface SimulationParams {
     config: ProjectConfig;
     policyConfig: PolicyConfig;
@@ -439,17 +452,13 @@ function runSimulation(params: SimulationParams): SimulationResults {
                         }
 
                         // Execution Overrun (already uses merged riskParams with confidence/contractor risk)
-                        // EXCLUDE MATERIAL: Material volatility covers price, Scope covers quantity. 
-                        // Overrun (Labor Inefficiency) applies mainly to Service/Infra.
-                        if (comp !== 'MATERIAL') {
-                            let overrun = sampleNormal(rng, riskParams.overrun!.mean, riskParams.overrun!.sigma * volatilityFactor);
-                            const overrunClamp = riskParams.overrun?.clampMax || 0.5;
-                            overrun = clamp(overrun, -0.2, overrunClamp);
+                        let overrun = sampleNormal(rng, riskParams.overrun!.mean, riskParams.overrun!.sigma * volatilityFactor);
+                        const overrunClamp = riskParams.overrun?.clampMax || 0.5;
+                        overrun = clamp(overrun, -0.2, overrunClamp);
 
-                            const valBeforeOverrun = val;
-                            val *= (1 + overrun);
-                            iterOverrunVar += (val - valBeforeOverrun);
-                        }
+                        const valBeforeOverrun = val;
+                        val *= (1 + overrun);
+                        iterOverrunVar += (val - valBeforeOverrun);
 
                         // Scope Drift
                         const valBeforeScope = val;
@@ -676,11 +685,7 @@ function runSimulation(params: SimulationParams): SimulationResults {
         // Safe Spend Limit = P20(Inflow + CarryForward)
         const inflowPlusCF = d.inflows.map((v, i) => v + d.carryForward[i]);
         const p20Safe = percentile(inflowPlusCF, 0.2);
-
-        // GAP CALCULATION: Compare Total Liability (P50) vs Safe Limit
-        // This accounts for Payables Backlog, not just monthly plan
-        const cashOutflowP50 = percentile(d.cashOutflows, 0.5);
-        const gapToFix = Math.max(0, cashOutflowP50 - p20Safe);
+        const gapToFix = Math.max(0, plannedOutflowTotal - p20Safe);
 
         return {
             month: m,

@@ -23,7 +23,7 @@ const SEED_ALLOCATIONS: DeptAllocation = {};
 const SEED_PLANNED: OutflowData = {};
 
 SEED_MONTHS.forEach(m => {
-    SEED_ALLOCATIONS[m] = { ENGINEERING: 100, MARKETING: 40, OTHERS: 20 };
+    SEED_ALLOCATIONS[m] = { ENGINEERING: 100 };
     SEED_PLANNED[m] = {
         'Tower A': { 'Concrete': { MATERIAL: 40, SERVICE: 20, INFRA: 5 } },
         'Tower B': { 'Shuttering': { SERVICE: 30, MATERIAL: 10, INFRA: 2 } }
@@ -84,9 +84,13 @@ function useProjectState() {
     // Initialize Current Month Actuals when config changes
     useEffect(() => {
         setCurrentMonthActuals((prev: CurrentMonthActuals | undefined) => {
-            if (prev && prev.currentMonth === config.asOfMonth) return prev;
+            const monthIdx = months.indexOf(config.asOfMonth) + 1;
+            // If valid index found (index >= 1), use it. otherwise default to 1.
+            const validIdx = monthIdx > 0 ? monthIdx : 1;
+
+            if (prev && prev.currentMonth === validIdx) return prev;
             return {
-                currentMonth: config.asOfMonth,
+                currentMonth: validIdx,
                 actualPaidToDate: { SERVICE: 0, MATERIAL: 0, INFRA: 0 },
                 elapsedProgress: 0.5,
                 commitmentsToDate: undefined,
@@ -96,7 +100,7 @@ function useProjectState() {
                 estimateToComplete: 0,
             };
         });
-    }, [config.asOfMonth]);
+    }, [config.asOfMonth, months]);
 
     // Mark hydration complete after first render
     useEffect(() => {
@@ -175,7 +179,10 @@ function useProjectState() {
         return () => clearTimeout(timer);
     }, [triggerSimulation]);
 
-    const updateConfig = (newConfig: Partial<ProjectConfig>) => setConfig(prev => ({ ...prev, ...newConfig }));
+    const updateConfig = (newConfig: Partial<ProjectConfig>) => {
+        console.log('[ProjectContext] Updating config:', newConfig);
+        setConfig(prev => ({ ...prev, ...newConfig }));
+    };
 
     const updateAllocation = (month: string, dept: any, value: number) => {
         setAllocations(prev => ({

@@ -21,11 +21,11 @@ export function MonthDetailDrawer({ month, open, onClose, onAdvancedClick }: Mon
   const getRiskIcon = (status: string) => {
     switch (status) {
       case 'low':
-        return <CheckCircle2 className="w-5 h-5" />;
+        return <CheckCircle2 className="w-4 h-4" />;
       case 'watch':
-        return <AlertCircle className="w-5 h-5" />;
+        return <AlertCircle className="w-4 h-4" />;
       case 'severe':
-        return <XCircle className="w-5 h-5" />;
+        return <XCircle className="w-4 h-4" />;
       default:
         return null;
     }
@@ -33,13 +33,20 @@ export function MonthDetailDrawer({ month, open, onClose, onAdvancedClick }: Mon
 
   const getBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" | null | undefined => {
     switch (status) {
-      case 'low':
-      case 'watch':
-        return 'secondary';
-      case 'severe':
-        return 'destructive';
-      default:
-        return 'default';
+      case 'low': return 'secondary'; // Will use emerald-50 in component
+      case 'watch': return 'secondary'; // Will use amber-50
+      case 'severe': return 'destructive'; // Will use red-50
+      default: return 'default';
+    }
+  };
+
+  // Custom badge styles to override default valid
+  const getBadgeClassName = (status: string) => {
+    switch (status) {
+      case 'low': return 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100';
+      case 'watch': return 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100';
+      case 'severe': return 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100';
+      default: return '';
     }
   };
 
@@ -54,9 +61,9 @@ export function MonthDetailDrawer({ month, open, onClose, onAdvancedClick }: Mon
 
   const getComponentBadgeColor = (component: ComponentType) => {
     const colors: Record<ComponentType, string> = {
-      SERVICE: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-      MATERIAL: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-      INFRA: 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+      SERVICE: 'bg-blue-50 text-blue-700 border-blue-200',
+      MATERIAL: 'bg-purple-50 text-purple-700 border-purple-200',
+      INFRA: 'bg-amber-50 text-amber-700 border-amber-200'
     };
     return colors[component];
   };
@@ -77,36 +84,36 @@ export function MonthDetailDrawer({ month, open, onClose, onAdvancedClick }: Mon
         <div className="flex items-center gap-3">
           <Badge
             variant={getBadgeVariant(month.status)}
-            className="flex items-center gap-2 px-3 py-1 text-sm"
+            className={`flex items-center gap-2 px-3 py-1 text-sm border ${getBadgeClassName(month.status)}`}
           >
             {getRiskIcon(month.status)}
-            <span>{getRiskLabel(month.status)} Risk</span>
+            <span className="font-semibold uppercase tracking-wide text-xs">{getRiskLabel(month.status)} Risk</span>
           </Badge>
         </div>
 
         {/* Stats Row */}
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <div className="text-[var(--text-tertiary)] text-[12px] uppercase tracking-wide mb-2">
+            <div className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-2">
               Probability
             </div>
-            <div className="text-[var(--text-primary)] text-[28px] font-semibold tabular-nums">
+            <div className="text-black text-3xl font-bold tabular-nums tracking-tight">
               {month.probability.toFixed(1)}%
             </div>
           </div>
           <div>
-            <div className="text-[var(--text-tertiary)] text-[12px] uppercase tracking-wide mb-2">
+            <div className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-2">
               Expected Shortfall
             </div>
-            <div className="text-[var(--text-primary)] text-[28px] font-semibold tabular-nums">
+            <div className="text-black text-3xl font-bold tabular-nums tracking-tight">
               {formatCurrency(month.expectedShortfall)}
             </div>
           </div>
           <div>
-            <div className="text-[var(--text-tertiary)] text-[12px] uppercase tracking-wide mb-2">
+            <div className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-2">
               P80 Shortfall
             </div>
-            <div className="text-[var(--text-primary)] text-[28px] font-semibold tabular-nums">
+            <div className="text-black text-3xl font-bold tabular-nums tracking-tight">
               {formatCurrency(month.p80Shortfall)}
             </div>
           </div>
@@ -114,13 +121,13 @@ export function MonthDetailDrawer({ month, open, onClose, onAdvancedClick }: Mon
 
         {/* What Happens */}
         <div>
-          <h4 className="text-[var(--text-secondary)] mb-3">What happens</h4>
-          <Card className="p-4 shadow-sm">
-            <p className="text-[var(--text-primary)] text-[15px] leading-relaxed">
-              There is a <span className="font-semibold">{month.probability.toFixed(1)}%</span> probability
+          <h4 className="text-black font-bold text-sm mb-3">Analysis</h4>
+          <Card className="p-5 shadow-sm bg-zinc-50/50 border-zinc-200">
+            <p className="text-zinc-800 text-sm leading-relaxed">
+              There is a <span className="font-bold text-black">{month.probability.toFixed(1)}%</span> probability
               that spending will exceed budget in {month.month}. In the worst-case (P80) scenario,
-              the shortfall could reach <span className="font-semibold">{formatCurrency(month.p80Shortfall)}</span>,
-              with an expected shortfall of <span className="font-semibold">{formatCurrency(month.expectedShortfall)}</span>.
+              the shortfall could reach <span className="font-bold text-red-600">{formatCurrency(month.p80Shortfall)}</span>,
+              with an expected shortfall of <span className="font-bold text-black">{formatCurrency(month.expectedShortfall)}</span>.
             </p>
           </Card>
         </div>
@@ -128,17 +135,17 @@ export function MonthDetailDrawer({ month, open, onClose, onAdvancedClick }: Mon
         {/* Why Section with Tabs */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h4 className="text-[var(--text-secondary)]">Why</h4>
+            <h4 className="text-black font-bold text-sm">Drivers</h4>
 
             {/* Segmented Control */}
-            <div className="inline-flex rounded-[var(--radius-md)] bg-[var(--surface-elevated)] p-1 border border-[var(--divider)]">
+            <div className="inline-flex rounded-lg bg-zinc-100 p-1 border border-zinc-200">
               <button
                 onClick={() => setActiveTab('drivers')}
                 className={`
-                  px-4 py-1.5 rounded-[var(--radius-sm)] text-[13px] font-medium transition-all
+                  px-4 py-1.5 rounded-md text-xs font-bold transition-all
                   ${activeTab === 'drivers'
-                    ? 'bg-[var(--accent-blue)] text-white'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    ? 'bg-white text-black shadow-sm ring-1 ring-black/5'
+                    : 'text-zinc-500 hover:text-black hover:bg-zinc-200/50'
                   }
                 `}
               >
@@ -147,10 +154,10 @@ export function MonthDetailDrawer({ month, open, onClose, onAdvancedClick }: Mon
               <button
                 onClick={() => setActiveTab('entities')}
                 className={`
-                  px-4 py-1.5 rounded-[var(--radius-sm)] text-[13px] font-medium transition-all
+                  px-4 py-1.5 rounded-md text-xs font-bold transition-all
                   ${activeTab === 'entities'
-                    ? 'bg-[var(--accent-blue)] text-white'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    ? 'bg-white text-black shadow-sm ring-1 ring-black/5'
+                    : 'text-zinc-500 hover:text-black hover:bg-zinc-200/50'
                   }
                 `}
               >
@@ -162,43 +169,44 @@ export function MonthDetailDrawer({ month, open, onClose, onAdvancedClick }: Mon
           {activeTab === 'drivers' && (
             <div className="space-y-3">
               {month.drivers.map((driver, index) => (
-                <Card key={driver.id} className="p-4 shadow-sm">
+                <Card key={driver.id} className="p-4 shadow-sm hover:border-zinc-300 transition-colors">
                   <div className="space-y-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-[var(--text-primary)] font-medium">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-black font-bold text-sm">
                             {driver.name}
                           </span>
                           <Badge
-                            className={getComponentBadgeColor(driver.component)}
+                            className={`text-[10px] px-1.5 py-0 border ${getComponentBadgeColor(driver.component)}`}
+                            variant="outline"
                           >
                             {driver.component}
                           </Badge>
                         </div>
-                        <p className="text-[var(--text-secondary)] text-[14px]">
+                        <p className="text-zinc-500 text-xs">
                           {driver.description}
                         </p>
                       </div>
-                      <div className="text-[var(--text-tertiary)] text-[13px] font-medium">
+                      <div className="text-zinc-400 text-xs font-bold font-mono">
                         #{index + 1}
                       </div>
                     </div>
 
-                    <div className="flex gap-6 pt-3 border-t border-[var(--divider-subtle)]">
+                    <div className="flex gap-8 pt-3 border-t border-zinc-100">
                       <div>
-                        <div className="text-[var(--text-tertiary)] text-[11px] uppercase tracking-wide mb-1">
+                        <div className="text-zinc-400 text-[10px] uppercase tracking-wider font-bold mb-1">
                           Risk Contribution
                         </div>
-                        <div className="text-[var(--text-primary)] text-[15px] font-semibold tabular-nums">
+                        <div className="text-black text-sm font-bold tabular-nums">
                           {(driver.riskContribution * 100).toFixed(0)}%
                         </div>
                       </div>
                       <div>
-                        <div className="text-[var(--text-tertiary)] text-[11px] uppercase tracking-wide mb-1">
+                        <div className="text-zinc-400 text-[10px] uppercase tracking-wider font-bold mb-1">
                           Impact Contribution
                         </div>
-                        <div className="text-[var(--text-primary)] text-[15px] font-semibold tabular-nums">
+                        <div className="text-black text-sm font-bold tabular-nums">
                           {(driver.impactContribution * 100).toFixed(0)}%
                         </div>
                       </div>
@@ -210,8 +218,8 @@ export function MonthDetailDrawer({ month, open, onClose, onAdvancedClick }: Mon
           )}
 
           {activeTab === 'entities' && (
-            <Card className="p-4 shadow-sm">
-              <div className="text-[var(--text-secondary)] text-center py-8">
+            <Card className="p-8 shadow-sm border-dashed border-zinc-300 bg-zinc-50/50">
+              <div className="text-zinc-400 text-center text-sm font-medium">
                 Entity-level breakdown coming soon
               </div>
             </Card>
@@ -221,41 +229,43 @@ export function MonthDetailDrawer({ month, open, onClose, onAdvancedClick }: Mon
         {/* Actions for This Month */}
         {monthActions.length > 0 && (
           <div>
-            <h4 className="text-[var(--text-secondary)] mb-4">Actions for this month</h4>
+            <h4 className="text-black font-bold text-sm mb-4">Recommended Actions</h4>
             <div className="space-y-3">
               {monthActions.map((action) => (
-                <Card key={action.id} className="p-4 shadow-sm">
-                  <div className="space-y-3">
+                <Card key={action.id} className="p-0 shadow-sm overflow-hidden border-zinc-200">
+                  <div className="p-4 bg-white">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Zap className="w-4 h-4 text-[var(--accent-blue)]" />
-                          <span className="text-[var(--text-primary)] font-medium">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="p-1 rounded bg-blue-50 text-blue-600">
+                            <Zap className="w-3.5 h-3.5" />
+                          </div>
+                          <span className="text-black font-bold text-sm">
                             {action.title}
                           </span>
                         </div>
-                        <p className="text-[var(--text-secondary)] text-[14px]">
+                        <p className="text-zinc-600 text-xs leading-relaxed pl-7">
                           {action.reason}
                         </p>
                       </div>
-                      <Badge variant="secondary">
+                      <Badge variant="outline" className="text-zinc-500 border-zinc-200 font-normal bg-zinc-50">
                         {action.category}
                       </Badge>
                     </div>
+                  </div>
 
-                    <div className="flex items-center justify-between pt-3 border-t border-[var(--divider-subtle)]">
-                      <div className="flex gap-4 text-[13px]">
-                        <span className="text-[var(--accent-green)] font-medium tabular-nums">
-                          {action.impact.worstP80 > 0 ? '+' : ''}{formatCurrency(Math.abs(action.impact.worstP80))}
-                        </span>
-                        <span className="text-[var(--accent-green)] font-medium tabular-nums">
-                          {action.impact.probability > 0 ? '+' : ''}{action.impact.probability.toFixed(1)}%
-                        </span>
-                      </div>
-                      <Button variant="default" size="sm">
-                        Apply
-                      </Button>
+                  <div className="px-4 py-3 bg-zinc-50 border-t border-zinc-100 flex items-center justify-between">
+                    <div className="flex gap-4 text-xs">
+                      <span className="text-emerald-700 font-bold tabular-nums bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
+                        {action.impact.worstP80 > 0 ? '+' : ''}{formatCurrency(Math.abs(action.impact.worstP80))} Savings
+                      </span>
+                      <span className="text-emerald-700 font-bold tabular-nums bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
+                        {action.impact.probability > 0 ? '+' : ''}{action.impact.probability.toFixed(1)}% Conf.
+                      </span>
                     </div>
+                    <Button size="sm" className="h-7 text-xs bg-black text-white hover:bg-zinc-800">
+                      Apply Action
+                    </Button>
                   </div>
                 </Card>
               ))}
@@ -264,15 +274,15 @@ export function MonthDetailDrawer({ month, open, onClose, onAdvancedClick }: Mon
         )}
 
         {/* Advanced Diagnostics Link */}
-        <div className="pt-6 border-t border-[var(--divider)]">
+        <div className="pt-6 border-t border-zinc-200">
           <Button
-            variant="link"
+            variant="ghost"
             size="sm"
             onClick={onAdvancedClick}
-            className="!p-0 !h-auto"
+            className="text-zinc-500 hover:text-black hover:bg-zinc-100 pl-0"
           >
-            <TrendingUp className="w-4 h-4" />
-            Advanced diagnostics
+            <TrendingUp className="w-4 h-4 mr-2" />
+            View Advanced Diagnostics
           </Button>
         </div>
       </div>

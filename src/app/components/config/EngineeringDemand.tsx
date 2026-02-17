@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Save, Copy, ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Save, Copy, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useProjectStore } from '../../../store/useProjectStore';
 import { format, parse } from 'date-fns';
@@ -120,15 +120,15 @@ export function EngineeringDemand() {
     return (
       <div className="max-w-7xl space-y-8">
         <div>
-          <h2 className="mb-2">Planned Outflow</h2>
-          <p className="text-[var(--text-secondary)]">
+          <h2 className="text-2xl font-bold text-black mb-2">Planned Outflow</h2>
+          <p className="text-zinc-500">
             Define demand forecasts by activity and component type
           </p>
         </div>
-        <div className="flex items-center justify-center h-[40vh]">
+        <div className="flex items-center justify-center h-[40vh] bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
           <div className="text-center">
-            <div className="text-[var(--text-secondary)] text-[16px] mb-2">No activities configured</div>
-            <div className="text-[var(--text-tertiary)] text-[13px]">
+            <div className="text-zinc-500 font-medium text-lg mb-2">No activities configured</div>
+            <div className="text-zinc-400 text-sm">
               Add activities in Project Setup to define demand forecasts
             </div>
           </div>
@@ -138,28 +138,27 @@ export function EngineeringDemand() {
   }
 
   return (
-    <div className="max-w-7xl space-y-8">
+    <div className="max-w-7xl space-y-8 pb-24">
       {/* Unsaved Changes Bar */}
       {hasChanges && (
-        <div className="fixed bottom-0 left-[240px] right-0 bg-[var(--accent-blue)] px-8 py-4 z-30 border-t border-blue-400/20">
-          <div className="flex items-center justify-between max-w-7xl">
+        <div className="fixed bottom-0 left-[260px] right-0 bg-black px-8 py-4 z-30 border-t border-zinc-800 shadow-xl">
+          <div className="flex items-center justify-between max-w-7xl mx-auto">
             <span className="text-white font-medium">You have unsaved changes</span>
             <div className="flex gap-3">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleDiscard}
-                className="!text-white hover:!bg-white/10"
+                className="text-white hover:text-white hover:bg-white/10"
               >
                 Discard
               </Button>
               <Button
-                variant="secondary"
                 size="sm"
                 onClick={handleSave}
-                className="!bg-white !text-[var(--accent-blue)]"
+                className="bg-white text-black hover:bg-zinc-200"
               >
-                <Save className="w-4 h-4" />
+                <Save className="w-4 h-4 mr-2" />
                 Save Changes
               </Button>
             </div>
@@ -168,23 +167,23 @@ export function EngineeringDemand() {
       )}
 
       <div>
-        <h2 className="mb-2">Planned Outflow</h2>
-        <p className="text-[var(--text-secondary)]">
+        <h2 className="text-2xl font-bold text-black mb-2">Planned Outflow</h2>
+        <p className="text-zinc-500">
           Define demand forecasts by activity and component type
         </p>
       </div>
 
       {/* Month Selector */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2">
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
         {months.map((month, idx) => (
           <button
             key={month}
             onClick={() => setSelectedMonthIdx(idx)}
             className={`
-              px-4 py-2 rounded-[var(--radius-md)] text-[14px] font-medium transition-all whitespace-nowrap
+              px-4 py-2 rounded text-sm font-bold transition-all whitespace-nowrap border
               ${selectedMonthIdx === idx
-                ? 'bg-[var(--accent-blue)] text-white'
-                : 'bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--divider)]'
+                ? 'bg-black text-white border-black shadow-md'
+                : 'bg-white text-zinc-500 hover:text-black border-zinc-200 hover:border-zinc-300'
               }
             `}
           >
@@ -194,50 +193,52 @@ export function EngineeringDemand() {
       </div>
 
       {/* Actions Bar */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 border-b border-zinc-200 pb-4">
         <Button
-          variant="secondary"
+          variant="outline"
           size="sm"
           onClick={handleCopyPrevious}
           disabled={selectedMonthIdx === 0}
+          className="border-zinc-300 text-black hover:bg-zinc-50"
         >
-          <Copy className="w-4 h-4" />
+          <Copy className="w-4 h-4 mr-2" />
           Copy from Previous Month
         </Button>
       </div>
 
       {/* Activities */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         {activities.map(activity => {
           const totals = getActivityTotal(activity, selectedMonth);
           const grandTotal = totals.SERVICE + totals.MATERIAL + totals.INFRA;
+          const isExpanded = expandedActivities.has(activity);
 
           return (
             <div
               key={activity}
-              className="bg-[var(--surface-elevated)] rounded-[var(--radius-lg)] border border-[var(--divider)] overflow-hidden"
+              className={`bg-white rounded-lg border transition-all duration-200 ${isExpanded ? 'border-zinc-300 shadow-sm' : 'border-zinc-200 hover:border-zinc-300'}`}
             >
               {/* Activity Header */}
               <button
                 onClick={() => toggleActivity(activity)}
-                className="w-full px-6 py-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors border-b border-[var(--divider-subtle)]"
+                className="w-full px-6 py-4 flex items-center justify-between hover:bg-zinc-50 transition-colors rounded-t-lg"
               >
                 <div className="flex items-center gap-3">
-                  {expandedActivities.has(activity) ? (
-                    <ChevronDown className="w-4 h-4 text-[var(--text-secondary)]" />
+                  {isExpanded ? (
+                    <ChevronDown className="w-4 h-4 text-black" />
                   ) : (
-                    <ChevronRight className="w-4 h-4 text-[var(--text-secondary)]" />
+                    <ChevronRight className="w-4 h-4 text-zinc-400" />
                   )}
-                  <span className="text-[var(--text-primary)] font-medium">
+                  <span className="text-black font-bold text-base">
                     {activity}
                   </span>
                 </div>
                 <div className="flex items-center gap-6">
                   <div className="text-right">
-                    <div className="text-[var(--text-tertiary)] text-[11px] uppercase tracking-wide">
+                    <div className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest mb-0.5">
                       Total
                     </div>
-                    <div className="text-[var(--text-primary)] font-semibold tabular-nums">
+                    <div className="text-black font-bold tabular-nums text-lg">
                       {formatCurrency(grandTotal)}
                     </div>
                   </div>
@@ -245,66 +246,75 @@ export function EngineeringDemand() {
               </button>
 
               {/* Expanded Content - Show by Entity */}
-              {expandedActivities.has(activity) && (
-                <div className="p-6 space-y-6">
+              {isExpanded && (
+                <div className="p-6 space-y-6 border-t border-zinc-100 bg-zinc-50/30 rounded-b-lg">
                   {entities.map(entity => {
                     const values = getComponentValues(entity, activity, selectedMonth);
                     const entityTotal = values.SERVICE + values.MATERIAL + values.INFRA;
 
                     return (
-                      <div key={entity} className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[var(--text-secondary)] text-[13px] font-medium">
+                      <div key={entity} className="space-y-3 bg-white p-4 rounded border border-zinc-100 shadow-sm">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-zinc-700 text-sm font-bold uppercase tracking-wide">
                             {entity}
                           </span>
-                          <span className="text-[var(--text-tertiary)] text-[12px] tabular-nums">
-                            Subtotal: {formatCurrency(entityTotal)}
+                          <span className="text-zinc-400 text-xs font-medium tabular-nums">
+                            Subtotal: <span className="text-black font-bold">{formatCurrency(entityTotal)}</span>
                           </span>
                         </div>
 
                         {/* Component Inputs */}
                         <div className="grid grid-cols-3 gap-4">
                           <div>
-                            <label className="block text-[var(--text-tertiary)] text-[12px] mb-1.5">
-                              Service (₹ Cr)
+                            <label className="block text-zinc-500 text-xs font-medium mb-1.5 uppercase">
+                              Service
                             </label>
-                            <input
-                              type="number"
-                              step="0.1"
-                              min="0"
-                              value={values.SERVICE || ''}
-                              placeholder="0"
-                              onChange={(e) => handleValueChange(entity, activity, 'SERVICE', parseFloat(e.target.value) || 0)}
-                              className="w-full px-3 py-2 bg-[var(--surface-base)] border border-[var(--divider)] rounded-[var(--radius-md)] text-[var(--text-primary)] text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)]"
-                            />
+                            <div className="relative">
+                              <span className="absolute left-3 top-2 text-zinc-400 text-sm">₹</span>
+                              <input
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                value={values.SERVICE || ''}
+                                placeholder="0"
+                                onChange={(e) => handleValueChange(entity, activity, 'SERVICE', parseFloat(e.target.value) || 0)}
+                                className="w-full pl-6 pr-3 py-2 bg-zinc-50 border border-zinc-200 rounded text-black text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all font-medium"
+                              />
+                            </div>
                           </div>
                           <div>
-                            <label className="block text-[var(--text-tertiary)] text-[12px] mb-1.5">
-                              Material (₹ Cr)
+                            <label className="block text-zinc-500 text-xs font-medium mb-1.5 uppercase">
+                              Material
                             </label>
-                            <input
-                              type="number"
-                              step="0.1"
-                              min="0"
-                              value={values.MATERIAL || ''}
-                              placeholder="0"
-                              onChange={(e) => handleValueChange(entity, activity, 'MATERIAL', parseFloat(e.target.value) || 0)}
-                              className="w-full px-3 py-2 bg-[var(--surface-base)] border border-[var(--divider)] rounded-[var(--radius-md)] text-[var(--text-primary)] text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)]"
-                            />
+                            <div className="relative">
+                              <span className="absolute left-3 top-2 text-zinc-400 text-sm">₹</span>
+                              <input
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                value={values.MATERIAL || ''}
+                                placeholder="0"
+                                onChange={(e) => handleValueChange(entity, activity, 'MATERIAL', parseFloat(e.target.value) || 0)}
+                                className="w-full pl-6 pr-3 py-2 bg-zinc-50 border border-zinc-200 rounded text-black text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all font-medium"
+                              />
+                            </div>
                           </div>
                           <div>
-                            <label className="block text-[var(--text-tertiary)] text-[12px] mb-1.5">
-                              Infra (₹ Cr)
+                            <label className="block text-zinc-500 text-xs font-medium mb-1.5 uppercase">
+                              Infra
                             </label>
-                            <input
-                              type="number"
-                              step="0.1"
-                              min="0"
-                              value={values.INFRA || ''}
-                              placeholder="0"
-                              onChange={(e) => handleValueChange(entity, activity, 'INFRA', parseFloat(e.target.value) || 0)}
-                              className="w-full px-3 py-2 bg-[var(--surface-base)] border border-[var(--divider)] rounded-[var(--radius-md)] text-[var(--text-primary)] text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)]"
-                            />
+                            <div className="relative">
+                              <span className="absolute left-3 top-2 text-zinc-400 text-sm">₹</span>
+                              <input
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                value={values.INFRA || ''}
+                                placeholder="0"
+                                onChange={(e) => handleValueChange(entity, activity, 'INFRA', parseFloat(e.target.value) || 0)}
+                                className="w-full pl-6 pr-3 py-2 bg-zinc-50 border border-zinc-200 rounded text-black text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all font-medium"
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -312,20 +322,20 @@ export function EngineeringDemand() {
                   })}
 
                   {/* Activity Summary */}
-                  <div className="flex items-center justify-between pt-4 border-t border-[var(--divider-subtle)]">
-                    <div className="flex gap-4 text-[12px]">
-                      <span className="text-blue-400">
-                        Service: {formatCurrency(totals.SERVICE)}
+                  <div className="flex items-center justify-between pt-4 border-t border-zinc-200 mt-4">
+                    <div className="flex gap-6 text-xs font-medium">
+                      <span className="text-zinc-600">
+                        Service: <span className="text-black font-bold">{formatCurrency(totals.SERVICE)}</span>
                       </span>
-                      <span className="text-purple-400">
-                        Material: {formatCurrency(totals.MATERIAL)}
+                      <span className="text-zinc-600">
+                        Material: <span className="text-black font-bold">{formatCurrency(totals.MATERIAL)}</span>
                       </span>
-                      <span className="text-amber-400">
-                        Infra: {formatCurrency(totals.INFRA)}
+                      <span className="text-zinc-600">
+                        Infra: <span className="text-black font-bold">{formatCurrency(totals.INFRA)}</span>
                       </span>
                     </div>
-                    <div className="text-[var(--text-tertiary)] text-[13px]">
-                      Activity total: <span className="text-[var(--text-primary)] font-semibold tabular-nums">{formatCurrency(grandTotal)}</span>
+                    <div className="text-zinc-500 text-xs uppercase tracking-wide font-bold">
+                      Activity total: <span className="text-black text-base font-bold tabular-nums ml-2">{formatCurrency(grandTotal)}</span>
                     </div>
                   </div>
                 </div>
@@ -336,19 +346,17 @@ export function EngineeringDemand() {
       </div>
 
       {/* Month Summary */}
-      <div className="bg-[var(--surface-elevated)] rounded-[var(--radius-lg)] border border-[var(--divider)] p-6">
-        <div className="flex items-center justify-between">
-          <div className="text-[var(--text-secondary)] text-[14px]">
-            Total Demand for {formatMonth(selectedMonth)}
-          </div>
-          <div className="text-[var(--text-primary)] text-[20px] font-semibold tabular-nums">
-            {formatCurrency(
-              activities.reduce((sum, act) => {
-                const totals = getActivityTotal(act, selectedMonth);
-                return sum + totals.SERVICE + totals.MATERIAL + totals.INFRA;
-              }, 0)
-            )}
-          </div>
+      <div className="bg-white rounded-lg border border-zinc-200 p-6 shadow-sm flex items-center justify-between sticky bottom-6 z-20">
+        <div className="text-zinc-500 text-sm font-medium">
+          Total Demand for <span className="text-black font-bold">{formatMonth(selectedMonth)}</span>
+        </div>
+        <div className="text-black text-2xl font-bold tabular-nums">
+          {formatCurrency(
+            activities.reduce((sum, act) => {
+              const totals = getActivityTotal(act, selectedMonth);
+              return sum + totals.SERVICE + totals.MATERIAL + totals.INFRA;
+            }, 0)
+          )}
         </div>
       </div>
     </div>

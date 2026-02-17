@@ -9,8 +9,11 @@ import {
   Clock,
   FileBarChart,
   Target,
-  Shield
+  Shield,
+  LogOut,
+  Zap
 } from 'lucide-react';
+import { clsx } from 'clsx';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -41,9 +44,8 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
     {
       label: 'PLANNING',
       items: [
-        { id: 'inflow-plan', label: 'Planned Inflow', icon: TrendingUp },
         { id: 'engineering-demand', label: 'Planned Outflow', icon: Activity },
-        { id: 'forecast-baseline', label: 'Forecast Baseline', icon: FileText },
+        { id: 'inflow-plan', label: 'Planned Inflow', icon: TrendingUp },
         { id: 'risk-setup', label: 'Risk Setup', icon: Shield },
       ]
     },
@@ -54,36 +56,42 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
         { id: 'recorded-actuals', label: 'Actual Outflow', icon: Database },
         { id: 'current-month-actuals', label: 'Current Month Actuals', icon: Clock },
       ]
+    },
+    {
+      label: 'GOD MODE',
+      items: [
+        { id: 'god-mode', label: 'God Mode', icon: Zap },
+      ]
     }
   ];
 
   return (
-    <div className="flex h-screen bg-app text-text-primary overflow-hidden">
-      {/* Sidebar - Glassmorphism */}
-      <aside className="w-[260px] relative z-20 flex flex-col border-r border-border-subtle bg-surface backdrop-blur-xl">
+    <div className="flex h-screen bg-[#F6F6F6] text-black overflow-hidden font-sans">
+      {/* Sidebar - Uber Black */}
+      <aside className="w-[260px] relative z-20 flex flex-col bg-black text-white shrink-0">
         {/* Logo Area */}
-        <div className="px-6 py-8 border-b border-border-subtle">
+        <div className="px-6 py-6 border-b border-zinc-900">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand to-brand-glow flex items-center justify-center shadow-lg shadow-brand/20 ring-1 ring-white/10">
-              <TrendingUp className="w-5 h-5 text-white" />
+            <div className="w-8 h-8 flex items-center justify-center bg-white text-black rounded-sm">
+              <TrendingUp className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-white font-semibold text-[16px] tracking-tight">
-                RiskInflow Pro
+              <div className="text-white font-bold text-[18px] tracking-tight leading-none">
+                RiskInflow
               </div>
-              <div className="text-text-muted text-[11px] font-medium uppercase tracking-wider">
-                Decision Console
+              <div className="text-zinc-500 text-[10px] font-bold tracking-widest mt-1">
+                NAVIGATOR
               </div>
             </div>
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-4 py-6 overflow-y-auto custom-scrollbar">
-          {navigationSections.map((section, sectionIndex) => (
-            <div key={section.label} className={sectionIndex > 0 ? 'mt-8' : ''}>
+        <nav className="flex-1 px-4 py-6 overflow-y-auto custom-scrollbar space-y-8">
+          {navigationSections.map((section) => (
+            <div key={section.label}>
               {/* Section Label */}
-              <div className="text-[10px] font-bold tracking-widest text-text-muted px-3 mb-3 uppercase">
+              <div className="text-[10px] font-bold tracking-widest text-zinc-600 px-3 mb-3 uppercase">
                 {section.label}
               </div>
 
@@ -97,21 +105,15 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
                     <button
                       key={item.id}
                       onClick={() => onNavigate(item.id)}
-                      className={`
-                        group w-full flex items-center gap-3 px-3 py-2.5 rounded-lg 
-                        transition-all duration-200 ease-out text-[13px] font-medium
-                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50
-                        ${isActive
-                          ? 'bg-brand/10 text-brand shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] border border-brand/20'
-                          : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover hover:translate-x-1'
-                        }
-                      `}
-                    >
-                      <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-brand' : 'text-text-muted group-hover:text-text-secondary'}`} />
-                      <span>{item.label}</span>
-                      {isActive && (
-                        <div className="ml-auto w-1.5 h-1.5 rounded-full bg-brand shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
+                      className={clsx(
+                        "group w-full flex items-center gap-3 px-3 py-2.5 rounded text-sm font-medium transition-colors duration-200",
+                        isActive
+                          ? "bg-white text-black font-bold"
+                          : "text-zinc-400 hover:text-white hover:bg-zinc-900"
                       )}
+                    >
+                      <Icon className={clsx("w-4 h-4", isActive ? "text-black" : "text-zinc-500 group-hover:text-white")} />
+                      {item.label}
                     </button>
                   );
                 })}
@@ -120,24 +122,39 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
           ))}
         </nav>
 
-        {/* Footer */}
-        <div className="px-6 py-6 border-t border-border-subtle bg-surface-active/30">
-          <div className="flex items-center gap-3">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)] animate-pulse"></div>
-            <div className="text-[11px] font-medium text-text-secondary">System Operational</div>
-          </div>
-          <div className="mt-2 text-[10px] text-text-muted font-mono">
-            v2.1.0 • Updated Feb 10
-          </div>
+        {/* User / Footer */}
+        <div className="p-4 border-t border-zinc-900">
+          <button className="flex items-center gap-3 w-full px-3 py-2 rounded hover:bg-zinc-900 transition-colors">
+            <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-white">
+              JD
+            </div>
+            <div className="text-left flex-1">
+              <div className="text-sm font-bold text-white leading-none">John Doe</div>
+              <div className="text-xs text-zinc-500 mt-1">Project Director</div>
+            </div>
+            <LogOut size={16} className="text-zinc-600" />
+          </button>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto custom-scrollbar relative">
-        {/* Background Ambient Glows */}
-        <div className="fixed top-0 left-0 w-full h-[500px] bg-brand/5 blur-[120px] pointer-events-none z-0" />
+      {/* Main Content Area */}
+      <main className="flex-1 overflow-y-auto relative bg-[#F6F6F6]">
+        {/* Sticky Header - Minimalist */}
+        <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-zinc-200 px-8 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-black tracking-tight capitalize">
+              {currentView.replace(/-/g, ' ')}
+            </h1>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-xs font-medium text-zinc-500 bg-zinc-100 px-2 py-1 rounded">
+              Last updated: Just now
+            </span>
+          </div>
+        </header>
 
-        <div className="relative z-10 p-8">
+        {/* Content Injector */}
+        <div className="p-0">
           {children}
         </div>
       </main>

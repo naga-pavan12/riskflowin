@@ -7,7 +7,7 @@ export default {
     theme: {
         extend: {
             colors: {
-                // Executive Glass System
+                // Uber Base System
                 app: 'var(--bg-app)',
                 surface: {
                     DEFAULT: 'var(--bg-surface)',
@@ -27,9 +27,9 @@ export default {
                     muted: 'var(--text-muted)',
                 },
                 brand: {
-                    DEFAULT: 'var(--accent-blue)',
+                    DEFAULT: 'var(--accent-blue)', // Uber Blue
                     dim: 'var(--accent-blue-dim)',
-                    glow: 'var(--accent-blue-glow)',
+                    glow: 'transparent',
                 },
                 accent: {
                     emerald: 'var(--accent-emerald)',
@@ -40,14 +40,19 @@ export default {
             },
             fontFamily: {
                 sans: ['Inter', 'system-ui', 'sans-serif'],
+                mono: ['SF Mono', 'ui-monospace', 'monospace'],
             },
             boxShadow: {
-                'glass': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.05)',
-                'glass-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)',
+                'sm': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                'DEFAULT': '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+                'md': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                'lg': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                'glass': 'none', // Removed
+                'glass-hover': 'none', // Removed
             },
             animation: {
-                'fade-in': 'fadeIn 0.3s ease-out',
-                'slide-up': 'slideUp 0.4s ease-out',
+                'fade-in': 'fadeIn 0.2s ease-out',
+                'slide-up': 'slideUp 0.3s ease-out',
             },
             keyframes: {
                 fadeIn: {

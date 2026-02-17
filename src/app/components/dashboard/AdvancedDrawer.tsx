@@ -3,7 +3,6 @@ import { Settings, Code, AlertCircle } from 'lucide-react';
 import { SimpleDrawer as Drawer } from '../ui/drawer';
 import { Card } from '../ui/card';
 import { Input } from '../ui/input';
-import { Select } from '../ui/select';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { useProjectStore } from '../../../store/useProjectStore';
@@ -67,10 +66,10 @@ export function AdvancedDrawer({ open, onClose }: AdvancedDrawerProps) {
       width="40%"
       footer={
         <div className="flex justify-end gap-3">
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} className="border-zinc-300 text-black hover:bg-zinc-50">
             Cancel
           </Button>
-          <Button variant="default" onClick={handleApply}>
+          <Button variant="default" onClick={handleApply} className="bg-black text-white hover:bg-zinc-800">
             Apply Changes
           </Button>
         </div>
@@ -78,14 +77,14 @@ export function AdvancedDrawer({ open, onClose }: AdvancedDrawerProps) {
     >
       <div className="space-y-8">
         {/* Warning */}
-        <Card className="bg-[var(--status-watch-bg)] border-[var(--status-watch-border)] p-4">
+        <Card className="bg-amber-50 border-amber-200 p-4 shadow-sm">
           <div className="flex gap-3">
-            <AlertCircle className="w-5 h-5 text-[var(--status-watch-text)] flex-shrink-0 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-amber-700 flex-shrink-0 mt-0.5" />
             <div>
-              <div className="text-[var(--text-primary)] font-medium mb-1">
+              <div className="text-black font-bold mb-1 text-sm">
                 Advanced Monte Carlo Settings
               </div>
-              <p className="text-[var(--text-secondary)] text-[14px]">
+              <p className="text-amber-800/80 text-xs leading-relaxed">
                 These controls affect simulation accuracy and runtime. Changes may impact forecast reliability.
               </p>
             </div>
@@ -95,52 +94,56 @@ export function AdvancedDrawer({ open, onClose }: AdvancedDrawerProps) {
         {/* Simulation Controls */}
         <div>
           <div className="flex items-center gap-2 mb-4">
-            <Settings className="w-4 h-4 text-[var(--text-secondary)]" />
-            <h4 className="text-[var(--text-secondary)]">Simulation Parameters</h4>
+            <Settings className="w-4 h-4 text-zinc-500" />
+            <h4 className="text-black font-bold text-sm">Simulation Parameters</h4>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div className="space-y-2">
-              <label className="text-[var(--text-secondary)] text-[13px] font-medium">Volatility Factor</label>
+              <label className="text-black text-xs font-bold uppercase tracking-wider">Volatility Factor (Sigma)</label>
               <Input
                 type="number"
                 step="0.01"
                 value={localVolatility}
                 onChange={(e) => setLocalVolatility(e.target.value)}
+                className="bg-white border-zinc-300 focus:ring-black focus:border-black text-black"
               />
-              <p className="text-[var(--text-tertiary)] text-[12px]">Standard deviation multiplier (0.1 - 1.0)</p>
+              <p className="text-zinc-500 text-xs">Standard deviation multiplier (0.1 - 1.0)</p>
             </div>
 
             <div className="space-y-2">
-              <label className="text-[var(--text-secondary)] text-[13px] font-medium">Correlation Coefficient</label>
+              <label className="text-black text-xs font-bold uppercase tracking-wider">Correlation Coefficient (Rho)</label>
               <Input
                 type="number"
                 step="0.01"
                 value={localCorrelation}
                 onChange={(e) => setLocalCorrelation(e.target.value)}
+                className="bg-white border-zinc-300 focus:ring-black focus:border-black text-black"
               />
-              <p className="text-[var(--text-tertiary)] text-[12px]">Cross-component correlation (0.0 - 1.0)</p>
+              <p className="text-zinc-500 text-xs">Cross-component correlation (0.0 - 1.0)</p>
             </div>
 
             <div className="space-y-2">
-              <label className="text-[var(--text-secondary)] text-[13px] font-medium">Random Seed</label>
+              <label className="text-black text-xs font-bold uppercase tracking-wider">Random Seed</label>
               <Input
                 type="number"
                 value={seed}
                 onChange={(e) => setSeed(e.target.value)}
+                className="bg-white border-zinc-300 focus:ring-black focus:border-black text-black"
               />
-              <p className="text-[var(--text-tertiary)] text-[12px]">For reproducible results</p>
+              <p className="text-zinc-500 text-xs">For reproducible results</p>
             </div>
 
             <div className="space-y-2">
-              <label className="text-[var(--text-secondary)] text-[13px] font-medium">Iterations</label>
+              <label className="text-black text-xs font-bold uppercase tracking-wider">Iterations</label>
               <Input
                 type="number"
                 step="1000"
                 value={iterations}
                 onChange={(e) => setIterations(e.target.value)}
+                className="bg-white border-zinc-300 focus:ring-black focus:border-black text-black"
               />
-              <p className="text-[var(--text-tertiary)] text-[12px]">Monte Carlo simulation runs (min 1000)</p>
+              <p className="text-zinc-500 text-xs">Monte Carlo simulation runs (min 1000)</p>
             </div>
           </div>
         </div>
@@ -148,26 +151,26 @@ export function AdvancedDrawer({ open, onClose }: AdvancedDrawerProps) {
         {/* Diagnostics */}
         <div>
           <div className="flex items-center gap-2 mb-4">
-            <Code className="w-4 h-4 text-[var(--text-secondary)]" />
-            <h4 className="text-[var(--text-secondary)]">Diagnostics</h4>
+            <Code className="w-4 h-4 text-zinc-500" />
+            <h4 className="text-black font-bold text-sm">System Health</h4>
           </div>
 
-          <Card className="p-4">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-[var(--text-secondary)] text-[14px]">
+          <Card className="p-0 border-zinc-200 overflow-hidden">
+            <div className="divide-y divide-zinc-100">
+              <div className="flex items-center justify-between p-4 bg-white">
+                <span className="text-zinc-600 text-sm font-medium">
                   Last Run
                 </span>
-                <span className="text-[var(--text-primary)] font-medium text-[14px]">
+                <span className="text-black font-mono text-xs">
                   {new Date().toLocaleString()}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between">
-                <span className="text-[var(--text-secondary)] text-[14px]">
+              <div className="flex items-center justify-between p-4 bg-white">
+                <span className="text-zinc-600 text-sm font-medium">
                   Missing Actuals
                 </span>
-                <Badge variant={missingActualsCount > 0 ? "secondary" : "outline"}>
+                <Badge variant={missingActualsCount > 0 ? "secondary" : "outline"} className={missingActualsCount > 0 ? "bg-amber-50 text-amber-700 border-amber-200" : "text-zinc-500 border-zinc-200"}>
                   {missingActualsCount} months
                 </Badge>
               </div>

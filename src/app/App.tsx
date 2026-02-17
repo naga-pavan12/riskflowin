@@ -9,11 +9,13 @@ import { AdvancedDrawer } from './components/dashboard/AdvancedDrawer';
 import { ProjectSetup } from './components/config/ProjectSetup';
 import { InflowPlan } from './components/config/InflowPlan';
 import { EngineeringDemand } from './components/config/EngineeringDemand';
-import { ForecastBaseline } from './components/config/ForecastBaseline';
 import { RecordedActuals } from './components/config/RecordedActuals';
 import { CurrentMonthActuals } from './components/config/CurrentMonthActuals';
 import { RiskSetup } from './components/config/RiskSetup';
 import { ActualInflow } from './components/config/ActualInflow';
+import { InterventionFeed } from './god-mode/InterventionFeed';
+import { GodModeProvider } from '../store/useGodModeStore';
+import { useProjectStore } from '../store/useProjectStore';
 // Design tokens moved to artifact: .gemini/antigravity/brain/<conversation-id>/design-system.md
 import { type MonthRisk } from './data/sampleData';
 
@@ -22,6 +24,7 @@ export default function App() {
   const [selectedMonth, setSelectedMonth] = useState<MonthRisk | null>(null);
   const [monthDrawerOpen, setMonthDrawerOpen] = useState(false);
   const [advancedDrawerOpen, setAdvancedDrawerOpen] = useState(false);
+  const { currentMonthActuals } = useProjectStore();
 
   const handleMonthClick = (month: MonthRisk) => {
     setSelectedMonth(month);
@@ -43,8 +46,6 @@ export default function App() {
         return <InflowPlan />;
       case 'engineering-demand':
         return <EngineeringDemand />;
-      case 'forecast-baseline':
-        return <ForecastBaseline />;
       case 'recorded-actuals':
         return <RecordedActuals />;
       case 'current-month-actuals':
@@ -53,6 +54,8 @@ export default function App() {
         return <RiskSetup />;
       case 'actual-inflow':
         return <ActualInflow />;
+      case 'god-mode':
+        return <GodModeProvider currentMonthActuals={currentMonthActuals}><InterventionFeed /></GodModeProvider>;
       // Design tokens view removed - see design-system.md artifact
       default:
         return <Dashboard onMonthClick={handleMonthClick} />;
@@ -60,7 +63,7 @@ export default function App() {
   };
 
   return (
-    <div className="dark">
+    <div>
       <AppShell currentView={currentView} onNavigate={setCurrentView}>
         <TopBar />
 

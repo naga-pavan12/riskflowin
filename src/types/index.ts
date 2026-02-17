@@ -7,7 +7,7 @@ import { z } from 'zod';
 export const ComponentType = z.enum(['SERVICE', 'MATERIAL', 'INFRA']);
 export type ComponentType = z.infer<typeof ComponentType>;
 
-export const DeptType = z.enum(['ENGINEERING', 'MARKETING', 'OTHERS']);
+export const DeptType = z.enum(['ENGINEERING']);
 export type DeptType = z.infer<typeof DeptType>;
 
 export const BreachModeSchema = z.enum(['payablesBacklogThrottle', 'deferUncommittedOnly']);
@@ -53,35 +53,41 @@ export const PolicyConfigSchema = z.object({
 export type PolicyConfig = z.infer<typeof PolicyConfigSchema>;
 
 // ============================================================================
-// RISK CONFIGURATION (High-Fidelity Control Panel)
+// NAVIGATOR EDITION - RISK DOMAIN MODELS (PHASE 1)
 // ============================================================================
+
+// 1. CONFIGURATION (The Manual Knobs)
+export interface ManualThreat {
+    id: string;
+    name: string;
+    month: number; // 1-based index
+    amount: number;
+    probability: number; // 0.0 to 1.0
+}
 
 export type VolatilityClass = 'low' | 'med' | 'high' | 'critical';
 export type ContractorRisk = 'reliable' | 'shaky' | 'high-risk';
 
-export interface ManualThreat {
-    id: string;
-    name: string;
-    month: string; // YYYY-MM
-    amount: number; // In Cr
-    probability: number; // 0.0 to 1.0
-}
-
 export interface RiskConfig {
     market: {
-        volatilityClass: VolatilityClass;
-        inflationExpectation: number; // e.g., 0.08 for 8% annual
-        fxExposurePct: number; // e.g., 0.15 for 15% of costs
+        volatilityClass: VolatilityClass; // low=0.05, med=0.10, high=0.20, critical=0.40
+        inflationExpectation: number; // e.g., 0.08
+        fxExposurePct: number; // e.g., 0.15
     };
     execution: {
         scheduleConfidence: number; // 0.0 to 1.0
         contractorRisk: ContractorRisk;
-        rainSeasonMonths: number[]; // 1-12 calendar months
+        rainSeasonMonths: number[]; // e.g., [6, 7]
     };
     funding: {
         collectionEfficiency: number; // e.g., 0.85
         covenantHardStop: boolean;
         minProgressCovenant: number; // e.g., 0.20
+    };
+    limits: { // Operational Constraints
+        maxMonthlyBurn: number;       // Max capacity (e.g. 10Cr)
+        maxVelocityChange: number;    // Max ramp-up (e.g., 1.2x)
+        minLiquidityBuffer: number;   // Panic floor (e.g. 50L)
     };
     threats: ManualThreat[];
 }
@@ -102,54 +108,134 @@ export const DEFAULT_RISK_CONFIG: RiskConfig = {
         covenantHardStop: false,
         minProgressCovenant: 0.20,
     },
+    limits: {
+        maxMonthlyBurn: 100.0,
+        maxVelocityChange: 1.5,
+        minLiquidityBuffer: 0.5,
+    },
     threats: [],
 };
 
-// ============================================================================
-// EARLY WARNING SYSTEM
-// ============================================================================
-
-export type WarningLevel = 'LOW' | 'MED' | 'HIGH' | 'CRITICAL';
-
-export interface EarlyWarning {
-    id: string;
-    level: WarningLevel;
-    title: string;
-    message: string;
-    metric?: string;
-    value?: number;
-    threshold?: number;
+// 1.b INTERNAL RISK PARAMS (For Simulation Engine)
+export interface RiskParams {
+    invoiceLag?: {
+        service: { p0: number; p1: number; p2?: number };
+        material: { p1: number; p2: number; p3?: number };
+        infra: { p0: number; p1: number; p2?: number };
+    };
+    materialVol?: {
+        sigmaMarket: number;
+        sigmaIdio: number;
+        marketWeight: number;
+        dist: 'lognormal' | 'normal' | 'student-t';
+        clampMax: number;
+    };
+    overrun?: {
+        mean: number;
+        sigma: number;
+        clampMax: number;
+    };
+    scopeDrift?: {
+        mean: number;
+        sigma: number;
+        cap: number;
+    };
+    reserve?: {
+        enabled: boolean;
+        total: number;
+        monthlyCap: number;
+    };
 }
 
-// ============================================================================
-// CURRENT MONTH ACTUALS (NOW-CAST INPUT)
-// ============================================================================
+// 2. SIGNALS (The Big Company Inputs)
+export interface CurrentMonthActuals {
+    currentMonth: number;
+    actualPaidToDate: { SERVICE: number; MATERIAL: number; INFRA: number };
+    elapsedProgress: number;
 
+    // NEW SIGNALS
+    committedPOValue: number;       // Toyota Method (Iceberg Risk)
+    physicalProgressPct: number;    // Lockheed Method (Earned Value)
+    plannedProgressPct: number;     // Baseline for Covenant
+    estimateToComplete: number;     // Unilever Method (Zero-Base Forecast)
+    commitmentsToDate?: { SERVICE?: number; MATERIAL?: number; INFRA?: number }; // For input tracking
+
+    // God Mode — Vital Signs ("Pulse Check")
+    vitalSigns?: VitalSignsInput;
+}
+
+/**
+ * Vital Signs input for God Mode vectors.
+ * Each field maps to one of the 12 Deep Vector signals.
+ * VELOCITY is derived from physicalProgressPct — not input separately.
+ */
+export interface VitalSignsInput {
+    // EXECUTION
+    activeWorkerCount: number;              // → RESOURCE_DENSITY
+    openDefectCount: number;                // → REWORK_BURDEN
+
+    // FINANCE
+    avgVendorPaymentDelay: number;          // → VENDOR_AGING (days)
+    unbilledWorkValue: number;              // → UNBILLED_ASSET (₹ Cr)
+    advanceRemainingPct: number;            // → ADVANCE_BURN (%)
+
+    // SUPPLY
+    criticalMaterialStockDays: number;      // → BURN_RATE (derived)
+    materialLeadTimeDelay: number;          // → LEAD_TIME_VAR (days)
+    indentApprovalDays: number;             // → INDENT_LATENCY (days)
+
+    // DESIGN & SITE
+    drawingsPendingPct: number;             // → DRAWING_GAP (%)
+    methodStatementsPendingPct: number;     // → METHODOLOGY_GAP (%)
+    idleFrontsPct: number;                  // → WORK_FRONT_GAP (%)
+}
+
+// Zod Schema for React Hook Form (Legacy compatibility)
 export const CurrentMonthActualsSchema = z.object({
-    currentMonth: z.string(), // YYYY-MM (auto-filled from asOfMonth, editable)
+    currentMonth: z.string(),
     actualPaidToDate: z.object({
         SERVICE: z.number().min(0).default(0),
         MATERIAL: z.number().min(0).default(0),
         INFRA: z.number().min(0).default(0),
     }),
-    elapsedProgress: z.number().min(0).max(1).default(0), // 0.0 to 1.0
+    elapsedProgress: z.number().min(0).max(1).default(0),
     commitmentsToDate: z.object({
         SERVICE: z.number().min(0).optional(),
         MATERIAL: z.number().min(0).optional(),
         INFRA: z.number().min(0).optional(),
     }).optional(),
-
-    // EVM Fields for 3-Month Warning
-    committedPOValue: z.number().min(0).default(0), // Total value of signed POs
-    physicalProgressPct: z.number().min(0).max(1).default(0), // Verified site progress
-    plannedProgressPct: z.number().min(0).max(1).default(0), // Planned schedule progress
-    estimateToComplete: z.number().min(0).default(0), // Remaining cash needed
+    committedPOValue: z.number().min(0).default(0),
+    physicalProgressPct: z.number().min(0).max(1).default(0),
+    plannedProgressPct: z.number().min(0).max(1).default(0),
+    estimateToComplete: z.number().min(0).default(0),
 });
 
-export type CurrentMonthActuals = z.infer<typeof CurrentMonthActualsSchema>;
+// 3. OUTPUTS (The Intelligence)
+export interface EarlyWarning {
+    id: string; // Added for rendering lists
+    level: 'LOW' | 'MED' | 'HIGH' | 'CRITICAL';
+    title: string; // Added for UI
+    message: string;
+    metric: string;
+    threshold: string;
+}
+
+export interface RiskScore {
+    month: number;
+    score: number; // 0-100
+    level: 'LOW' | 'MED' | 'HIGH' | 'CRITICAL';
+    primaryFactor: 'VELOCITY' | 'CAPACITY' | 'LIQUIDITY';
+    breakdown: { velocity: number; capacity: number; liquidity: number };
+}
+
+export interface RCABreakdown {
+    shortfallAmount: number;
+    primaryDriver: string;
+    drivers: { price: number; usage: number; time: number; funding: number };
+}
 
 // ============================================================================
-// DATA STRUCTURES
+// DATA STRUCTURES (Original)
 // ============================================================================
 
 export const OutflowEntrySchema = z.record(
@@ -184,8 +270,7 @@ export interface SimulationInput {
     plannedOutflows: OutflowData;
     actualOutflows: OutflowData;
     currentMonthActuals?: CurrentMonthActuals;
-    volatilityFactor: number;
-    corrStrength: number;
+    riskConfig: RiskConfig; // NEW: Passed to worker
     iterations: number;
     seed: number;
     activeScenarios?: string[];
@@ -216,40 +301,6 @@ export interface ScenarioAction {
         deltaStoppageRisk: number;
         deltaP80Shortfall: number;
         deltaGapTotal: number;
-    };
-}
-
-// ============================================================================
-// RISK PARAMS (ENGINE CONFIG)
-// ============================================================================
-
-export interface RiskParams {
-    invoiceLag?: {
-        service?: { p0: number; p1: number };
-        material?: { p1: number; p2: number };
-        infra?: { p0: number; p1: number; p2: number };
-    };
-    materialVol?: {
-        sigmaMarket: number;
-        sigmaIdio: number;
-        marketWeight: number;
-        dist: "lognormal" | "student-t";
-        clampMax?: number; // Max multiplier to prevent outliers
-    };
-    overrun?: {
-        mean: number;
-        sigma: number;
-        clampMax?: number;
-    };
-    scopeDrift?: {
-        mean: number;
-        sigma: number;
-        cap?: number;
-    };
-    reserve?: {
-        enabled: boolean;
-        total: number;
-        monthlyCap: number;
     };
 }
 
@@ -287,7 +338,7 @@ export interface MonthlyStats {
     safeSpendLimit: number;
     gapToFix: number;
 
-    // Payables Backlog (NEW)
+    // Payables Backlog
     payablesBacklogP50: number;
     payablesBacklogP80: number;
     payablesBacklogExpected: number;
@@ -298,7 +349,7 @@ export interface MonthlyStats {
     scheduleDebtExpected: number;
     deferredCostExpected: number;
 
-    // Throttle (NEW - for diagnostics)
+    // Throttle
     throttlePctExpected: number;
 }
 
@@ -352,6 +403,37 @@ export interface Diagnostics {
     monthlyBacklogCarried: Record<string, number>; // month -> expected backlog
 }
 
+// 4. FLIGHT SIMULATOR (The Visceral Experience)
+export interface SamplePath {
+    id: number;
+    monthlyData: {
+        month: string;
+        cashOutflow: number;
+        shortfall: number;
+        scheduleDebt: number;
+    }[];
+}
+
+export interface SensitivityFactor {
+    factor: string;
+    change: string;
+    impactOnShortfall: number;
+    impactOnScore: number;
+}
+
+export interface KillChainEvent {
+    month: string;
+    description: string;
+    severity: 'LOW' | 'MED' | 'HIGH' | 'CRITICAL';
+    impactType: 'COST' | 'SCHEDULE' | 'LIQUIDITY';
+}
+
+export interface KillChain {
+    iterationId: number;
+    totalShortfall: number;
+    events: KillChainEvent[];
+}
+
 export interface SimulationResults {
     monthlyStats: MonthlyStats[];
 
@@ -403,12 +485,20 @@ export interface SimulationResults {
     nowCast?: NowCastResults;
     breachRadar?: BreachRadarResults;
 
-    // Early Warning System
-    earlyWarnings?: EarlyWarning[];
+    // Early Warning System - The Navigator Edition
+    earlyWarnings: EarlyWarning[];
+    riskScores: RiskScore[];
+    rca?: RCABreakdown;
+    narrative?: string;
+
+    // Flight Simulator Extensions
+    samplePaths?: SamplePath[];
+    sensitivityAnalysis?: SensitivityFactor[];
+    killChain?: KillChain;
 }
 
 // ============================================================================
-// ACTION PORTFOLIOS (NEW)
+// ACTION PORTFOLIOS
 // ============================================================================
 
 export interface PortfolioStep {
@@ -442,3 +532,36 @@ export interface TriggerSuggestion {
     stepId: string;
 }
 
+// ============================================================================
+// PULSE RAIL (UNIFIED RISK ARCHITECTURE)
+// ============================================================================
+
+export type LaborStability = 'Stable' | 'Fluctuating' | 'Critical';
+export type MaterialAvailability = 'Full' | 'Partial' | 'Scarce';
+export type DesignGaps = 'None' | 'Minor' | 'Major';
+
+export interface PulseFinancials {
+    targetValue: number;    // Internal Plan
+    achievedValue: number;  // Recorded Actuals
+    heldAmount: number;     // Amount on Hold
+    unbilledAmount: number; // WIP not yet billed
+}
+
+export interface PulseState {
+    laborStability: LaborStability;
+    materialAvailability: MaterialAvailability;
+    designGaps: DesignGaps;
+    financials: PulseFinancials;
+}
+
+export const DEFAULT_PULSE_STATE: PulseState = {
+    laborStability: 'Stable',
+    materialAvailability: 'Full',
+    designGaps: 'None',
+    financials: {
+        targetValue: 0,
+        achievedValue: 0,
+        heldAmount: 0,
+        unbilledAmount: 0
+    }
+};

@@ -26,29 +26,38 @@ export function ActualInflow() {
     // Determine which months are historical (before or equal to asOfMonth)
     const asOfIndex = months.indexOf(config.asOfMonth);
 
+    // Prune future actuals whenever asOfMonth changes
+    React.useEffect(() => {
+        const futureMonths = months.filter((_, i) => i > asOfIndex);
+        const hasFutureData = futureMonths.some(m => actualAllocations[m]?.['ENGINEERING'] > 0);
+
+        if (hasFutureData) {
+            setActualAllocations(prev => {
+                const next = { ...prev };
+                futureMonths.forEach(m => {
+                    if (next[m]) delete next[m];
+                });
+                return next;
+            });
+            // No need to setHasChanges(true) as this is a cleanup
+        }
+    }, [asOfIndex, months, actualAllocations, setActualAllocations]);
+
     const getMonthTotal = (month: string): number => {
-        const monthData = actualAllocations[month];
-        if (!monthData) return 0;
-        return Object.values(monthData).reduce((sum, val) => sum + (val || 0), 0);
+        return actualAllocations[month]?.['ENGINEERING'] || 0;
     };
 
     const getPlannedTotal = (month: string): number => {
-        const monthData = allocations[month];
-        if (!monthData) return 0;
-        return Object.values(monthData).reduce((sum, val) => sum + (val || 0), 0);
+        return allocations[month]?.['ENGINEERING'] || 0;
     };
 
     const getDeptAllocation = (month: string, dept: string): number => {
-        return actualAllocations[month]?.[dept as 'ENGINEERING' | 'MARKETING' | 'OTHERS'] || 0;
+        return actualAllocations[month]?.[dept as 'ENGINEERING'] || 0;
     };
 
     const grandTotal = useMemo(() => {
         return months.reduce((sum, month) => sum + getMonthTotal(month), 0);
     }, [months, actualAllocations]);
-
-    const grandPlanned = useMemo(() => {
-        return months.reduce((sum, month) => sum + getPlannedTotal(month), 0);
-    }, [months, allocations]);
 
     const handleInputChange = (month: string, dept: string, value: number) => {
         setActualAllocations((prev: any) => ({
@@ -82,16 +91,16 @@ export function ActualInflow() {
         return (
             <div className="max-w-6xl space-y-8">
                 <div>
-                    <h2 className="mb-2">Actual Inflow</h2>
-                    <p className="text-[var(--text-secondary)]">
+                    <h2 className="text-2xl font-bold text-black mb-2">Actual Inflow</h2>
+                    <p className="text-zinc-500">
                         Record actual monthly budget inflows received (₹ Cr)
                     </p>
                 </div>
-                <div className="flex items-center justify-center h-[40vh]">
+                <div className="flex items-center justify-center h-[40vh] bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
                     <div className="text-center">
-                        <div className="text-[var(--text-secondary)] text-[16px] mb-2">No months configured</div>
-                        <div className="text-[var(--text-tertiary)] text-[13px]">
-                            Configure project duration in Project Setup first
+                        <div className="text-zinc-500 font-medium text-lg mb-2">No months configured</div>
+                        <div className="text-zinc-400 text-sm">
+                            Configure project duration in Project Setup
                         </div>
                     </div>
                 </div>
@@ -99,121 +108,96 @@ export function ActualInflow() {
         );
     }
 
+    // Only show months up to asOfMonth
+    const actualMonths = months.slice(0, asOfIndex + 1);
+
     return (
-        <div className="max-w-6xl space-y-8">
+        <div className="max-w-6xl space-y-8 pb-24">
             {/* Unsaved Changes Bar */}
             {hasChanges && (
-                <div className="fixed bottom-0 left-[240px] right-0 bg-emerald-600 px-8 py-4 z-30 border-t border-emerald-400/20">
-                    <div className="flex items-center justify-between max-w-6xl">
+                <div className="fixed bottom-0 left-[260px] right-0 bg-black px-8 py-4 z-30 border-t border-zinc-800 shadow-xl">
+                    <div className="flex items-center justify-between max-w-6xl mx-auto">
                         <span className="text-white font-medium">You have unsaved changes</span>
-                        <div className="flex gap-3">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setHasChanges(false)}
-                                className="!text-white hover:!bg-white/10"
-                            >
-                                Discard
-                            </Button>
-                            <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => setHasChanges(false)}
-                                className="!bg-white !text-emerald-700"
-                            >
-                                <Save className="w-4 h-4" />
-                                Save Changes
-                            </Button>
-                        </div>
+                        <Button
+                            size="sm"
+                            onClick={() => setHasChanges(false)}
+                            className="bg-white text-black hover:bg-zinc-200"
+                        >
+                            <Save className="w-4 h-4 mr-2" />
+                            Save Changes
+                        </Button>
                     </div>
                 </div>
             )}
 
             <div>
-                <h2 className="mb-2">Actual Inflow</h2>
-                <p className="text-[var(--text-secondary)]">
-                    Record actual monthly budget inflows received by department (₹ Cr).
-                    <span className="text-[var(--text-muted)] ml-2">Planned values shown for comparison.</span>
+                <h2 className="text-2xl font-bold text-black mb-2">Actual Inflow</h2>
+                <p className="text-zinc-500">
+                    Record actual monthly budget inflows received (₹ Cr). Future months are disabled.
                 </p>
             </div>
 
+            {/* Stats */}
+            <div className="grid grid-cols-2 gap-6">
+                <div className="bg-white p-6 rounded-lg border border-zinc-200 shadow-sm">
+                    <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1">Total Actual Inflow</p>
+                    <p className="text-3xl font-bold text-black tabular-nums">{formatCurrency(grandTotal)}</p>
+                </div>
+                {/* Could add variance vs plan here */}
+            </div>
+
             {/* Grid Editor */}
-            <div className="bg-[var(--surface-elevated)] rounded-[var(--radius-lg)] border border-[var(--divider)] overflow-hidden">
+            <div className="bg-white rounded-lg border border-zinc-200 overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
                     <table className="w-full">
-                        <thead className="sticky top-0 bg-[var(--surface-elevated)] border-b border-[var(--divider)]">
+                        <thead className="sticky top-0 bg-zinc-50 border-b border-zinc-200">
                             <tr>
-                                <th className="px-6 py-4 text-left text-[var(--text-secondary)] text-[12px] font-medium uppercase tracking-wide">
+                                <th className="px-6 py-4 text-left text-zinc-500 text-xs font-bold uppercase tracking-wider">
                                     Month
                                 </th>
-                                <th className="px-4 py-4 text-right text-[var(--text-secondary)] text-[12px] font-medium uppercase tracking-wide">
-                                    Engineering
+                                <th className="px-4 py-4 text-right text-zinc-500 text-xs font-bold uppercase tracking-wider">
+                                    Actual Received
                                 </th>
-                                <th className="px-4 py-4 text-right text-[var(--text-secondary)] text-[12px] font-medium uppercase tracking-wide">
-                                    Marketing
-                                </th>
-                                <th className="px-4 py-4 text-right text-[var(--text-secondary)] text-[12px] font-medium uppercase tracking-wide">
-                                    Others
-                                </th>
-                                <th className="px-4 py-4 text-right text-[var(--text-secondary)] text-[12px] font-medium uppercase tracking-wide">
-                                    Actual Total
-                                </th>
-                                <th className="px-4 py-4 text-right text-[var(--text-secondary)] text-[12px] font-medium uppercase tracking-wide">
+                                <th className="px-4 py-4 text-right text-zinc-500 text-xs font-bold uppercase tracking-wider text-zinc-400">
                                     Planned
                                 </th>
-                                <th className="px-4 py-4 text-right text-[var(--text-secondary)] text-[12px] font-medium uppercase tracking-wide">
-                                    Variance
-                                </th>
-                                <th className="px-4 py-4 text-right text-[var(--text-secondary)] text-[12px] font-medium uppercase tracking-wide w-28">
+                                <th className="px-4 py-4 text-right text-zinc-500 text-xs font-bold uppercase tracking-wider w-32">
                                     Actions
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-[var(--divider-subtle)]">
-                            {months.map((month, index) => {
-                                const actualTotal = getMonthTotal(month);
+                        <tbody className="divide-y divide-zinc-100">
+                            {actualMonths.map((month) => {
+                                const monthTotal = getMonthTotal(month);
                                 const plannedTotal = getPlannedTotal(month);
-                                const variance = actualTotal - plannedTotal;
-                                const isHistorical = index <= asOfIndex;
+                                const variance = monthTotal - plannedTotal;
 
                                 return (
-                                    <tr key={month} className={`hover:bg-white/[0.02] transition-colors ${!isHistorical ? 'opacity-40' : ''}`}>
+                                    <tr key={month} className="hover:bg-zinc-50 transition-colors group">
                                         <td className="px-6 py-3">
-                                            <span className="text-[var(--text-primary)] font-medium text-[14px]">
+                                            <span className="text-black font-medium text-sm">
                                                 {formatMonth(month)}
                                             </span>
                                             {month === config.asOfMonth && (
-                                                <span className="ml-2 text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded font-medium">NOW</span>
+                                                <span className="ml-2 text-[10px] font-bold bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded uppercase tracking-wide">
+                                                    Current
+                                                </span>
                                             )}
                                         </td>
-                                        {['ENGINEERING', 'MARKETING', 'OTHERS'].map(dept => (
-                                            <td key={dept} className="px-4 py-3">
-                                                <input
-                                                    type="number"
-                                                    step="1"
-                                                    min="0"
-                                                    value={getDeptAllocation(month, dept) || ''}
-                                                    placeholder="0"
-                                                    onChange={(e) => handleInputChange(month, dept, parseFloat(e.target.value) || 0)}
-                                                    disabled={!isHistorical}
-                                                    className="w-24 px-2 py-1.5 bg-[var(--surface-base)] border border-[var(--divider)] rounded-[var(--radius-md)] text-[var(--text-primary)] text-right tabular-nums text-[13px] focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed"
-                                                />
-                                            </td>
-                                        ))}
-                                        <td className="px-4 py-3 text-right">
-                                            <span className="text-[var(--text-primary)] font-semibold tabular-nums text-[14px]">
-                                                {formatCurrency(actualTotal)}
-                                            </span>
+                                        <td className="px-4 py-3">
+                                            <input
+                                                type="number"
+                                                step="1"
+                                                min="0"
+                                                value={getDeptAllocation(month, 'ENGINEERING') || ''}
+                                                placeholder="0"
+                                                onChange={(e) => handleInputChange(month, 'ENGINEERING', parseFloat(e.target.value) || 0)}
+                                                className="w-full px-3 py-2 bg-white border border-zinc-200 rounded text-black text-right tabular-nums text-sm focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all font-medium"
+                                            />
                                         </td>
                                         <td className="px-4 py-3 text-right">
-                                            <span className="text-[var(--text-muted)] tabular-nums text-[13px]">
+                                            <span className="text-zinc-400 font-medium tabular-nums text-sm">
                                                 {formatCurrency(plannedTotal)}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 text-right">
-                                            <span className={`tabular-nums text-[13px] font-medium ${variance > 0 ? 'text-emerald-400' : variance < 0 ? 'text-rose-400' : 'text-slate-500'
-                                                }`}>
-                                                {variance > 0 ? '+' : ''}{formatCurrency(variance)}
                                             </span>
                                         </td>
                                         <td className="px-4 py-3 text-right">
@@ -221,72 +205,27 @@ export function ActualInflow() {
                                                 variant="ghost"
                                                 size="sm"
                                                 onClick={() => handleCopyPlanned(month)}
-                                                disabled={!isHistorical}
-                                                className="!h-7 !text-[12px]"
+                                                className="text-zinc-400 hover:text-black hover:bg-zinc-200 opacity-0 group-hover:opacity-100 transition-all text-xs"
                                             >
-                                                <Copy className="w-3 h-3" />
-                                                Use Planned
+                                                <Copy className="w-3 h-3 mr-1" />
+                                                Copy Plan
                                             </Button>
                                         </td>
                                     </tr>
                                 );
                             })}
                         </tbody>
-                        <tfoot className="border-t border-[var(--divider)] bg-[var(--surface-elevated)]">
-                            <tr>
-                                <td className="px-6 py-4 text-[var(--text-secondary)] font-medium">
-                                    Total ({months.filter((_, i) => i <= asOfIndex).length} months recorded)
-                                </td>
-                                <td className="px-4 py-4 text-right text-blue-400 font-medium tabular-nums">
-                                    {formatCurrency(months.reduce((sum, m) => sum + getDeptAllocation(m, 'ENGINEERING'), 0))}
-                                </td>
-                                <td className="px-4 py-4 text-right text-purple-400 font-medium tabular-nums">
-                                    {formatCurrency(months.reduce((sum, m) => sum + getDeptAllocation(m, 'MARKETING'), 0))}
-                                </td>
-                                <td className="px-4 py-4 text-right text-amber-400 font-medium tabular-nums">
-                                    {formatCurrency(months.reduce((sum, m) => sum + getDeptAllocation(m, 'OTHERS'), 0))}
-                                </td>
-                                <td className="px-4 py-4 text-right text-[var(--text-primary)] font-semibold tabular-nums text-[18px]">
-                                    {formatCurrency(grandTotal)}
-                                </td>
-                                <td className="px-4 py-4 text-right text-[var(--text-muted)] tabular-nums">
-                                    {formatCurrency(grandPlanned)}
-                                </td>
-                                <td className="px-4 py-4 text-right">
-                                    <span className={`font-semibold tabular-nums ${grandTotal - grandPlanned > 0 ? 'text-emerald-400' : 'text-rose-400'
-                                        }`}>
-                                        {grandTotal - grandPlanned > 0 ? '+' : ''}{formatCurrency(grandTotal - grandPlanned)}
-                                    </span>
-                                </td>
-                                <td></td>
-                            </tr>
-                        </tfoot>
                     </table>
                 </div>
             </div>
 
-            {/* Collection Summary */}
-            <div className="bg-[var(--surface-elevated)] rounded-[var(--radius-lg)] border border-[var(--divider)] p-5">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <div className="text-[var(--text-tertiary)] text-[12px] uppercase tracking-wide mb-1">
-                            Total Actual Inflow
-                        </div>
-                        <div className="text-[var(--text-primary)] text-[20px] font-semibold tabular-nums">
-                            {formatCurrency(grandTotal)}
-                        </div>
-                    </div>
-                    <div className="text-right">
-                        <div className="text-[var(--text-tertiary)] text-[12px] uppercase tracking-wide mb-1">
-                            Collection Rate
-                        </div>
-                        <div className={`text-[18px] font-semibold tabular-nums ${grandPlanned > 0 && grandTotal / grandPlanned >= 0.95 ? 'text-emerald-400' : 'text-amber-400'
-                            }`}>
-                            {grandPlanned > 0 ? ((grandTotal / grandPlanned) * 100).toFixed(1) : 0}%
-                        </div>
-                    </div>
+            {months.length > actualMonths.length && (
+                <div className="text-center p-8 border border-dashed border-zinc-200 rounded-lg bg-zinc-50">
+                    <p className="text-zinc-400 text-sm">
+                        Future months ({months.length - actualMonths.length}) are hidden. Advance the "As of Month" in Project Setup to unlock them.
+                    </p>
                 </div>
-            </div>
+            )}
         </div>
     );
 }

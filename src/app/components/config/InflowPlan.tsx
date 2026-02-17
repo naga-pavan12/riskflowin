@@ -24,16 +24,14 @@ export function InflowPlan() {
     }
   };
 
-  // Get total inflow for a month (sum of all departments)
+  // Get total inflow for a month (Engineering only)
   const getMonthTotal = (month: string): number => {
-    const monthData = allocations[month];
-    if (!monthData) return 0;
-    return Object.values(monthData).reduce((sum, val) => sum + (val || 0), 0);
+    return allocations[month]?.['ENGINEERING'] || 0;
   };
 
   // Get department allocation for a month
   const getDeptAllocation = (month: string, dept: string): number => {
-    return allocations[month]?.[dept as 'ENGINEERING' | 'MARKETING' | 'OTHERS'] || 0;
+    return allocations[month]?.[dept as 'ENGINEERING'] || 0;
   };
 
   // Total across all months
@@ -59,14 +57,11 @@ export function InflowPlan() {
     if (months.length === 0) return;
 
     const avgPerMonth = grandTotal / months.length;
-    const engShare = 0.6; // 60% to engineering
-    const mktShare = 0.25; // 25% to marketing
-    const othShare = 0.15; // 15% to others
 
     months.forEach(month => {
-      updateAllocation(month, 'ENGINEERING', avgPerMonth * engShare);
-      updateAllocation(month, 'MARKETING', avgPerMonth * mktShare);
-      updateAllocation(month, 'OTHERS', avgPerMonth * othShare);
+      updateAllocation(month, 'ENGINEERING', avgPerMonth);
+      updateAllocation(month, 'MARKETING', 0);
+      updateAllocation(month, 'OTHERS', 0);
     });
     setHasChanges(true);
   };
@@ -91,15 +86,15 @@ export function InflowPlan() {
     return (
       <div className="max-w-6xl space-y-8">
         <div>
-          <h2 className="mb-2">Planned Inflow</h2>
-          <p className="text-[var(--text-secondary)]">
+          <h2 className="text-2xl font-bold text-black mb-2">Planned Inflow</h2>
+          <p className="text-zinc-500">
             Define planned monthly budget inflows (₹ Cr)
           </p>
         </div>
-        <div className="flex items-center justify-center h-[40vh]">
+        <div className="flex items-center justify-center h-[40vh] bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
           <div className="text-center">
-            <div className="text-[var(--text-secondary)] text-[16px] mb-2">No months configured</div>
-            <div className="text-[var(--text-tertiary)] text-[13px]">
+            <div className="text-zinc-500 font-medium text-lg mb-2">No months configured</div>
+            <div className="text-zinc-400 text-sm">
               Configure project duration in Project Setup to define inflow plan
             </div>
           </div>
@@ -109,28 +104,27 @@ export function InflowPlan() {
   }
 
   return (
-    <div className="max-w-6xl space-y-8">
+    <div className="max-w-6xl space-y-8 pb-24">
       {/* Unsaved Changes Bar */}
       {hasChanges && (
-        <div className="fixed bottom-0 left-[240px] right-0 bg-[var(--accent-blue)] px-8 py-4 z-30 border-t border-blue-400/20">
-          <div className="flex items-center justify-between max-w-6xl">
+        <div className="fixed bottom-0 left-[260px] right-0 bg-black px-8 py-4 z-30 border-t border-zinc-800 shadow-xl">
+          <div className="flex items-center justify-between max-w-6xl mx-auto">
             <span className="text-white font-medium">You have unsaved changes</span>
             <div className="flex gap-3">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleDiscard}
-                className="!text-white hover:!bg-white/10"
+                className="text-white hover:text-white hover:bg-white/10"
               >
                 Discard
               </Button>
               <Button
-                variant="secondary"
                 size="sm"
                 onClick={handleSave}
-                className="!bg-white !text-[var(--accent-blue)]"
+                className="bg-white text-black hover:bg-zinc-200"
               >
-                <Save className="w-4 h-4" />
+                <Save className="w-4 h-4 mr-2" />
                 Save Changes
               </Button>
             </div>
@@ -139,55 +133,49 @@ export function InflowPlan() {
       )}
 
       <div>
-        <h2 className="mb-2">Planned Inflow</h2>
-        <p className="text-[var(--text-secondary)]">
-          Define planned monthly budget inflows by department (₹ Cr)
+        <h2 className="text-2xl font-bold text-black mb-2">Planned Inflow</h2>
+        <p className="text-zinc-500">
+          Define planned monthly engineering budget inflows (₹ Cr)
         </p>
       </div>
 
       {/* Bulk Actions */}
       <div className="flex items-center gap-3">
-        <Button variant="secondary" size="sm" onClick={handleBulkFill}>
+        <Button variant="outline" size="sm" onClick={handleBulkFill} className="border-zinc-300 text-black hover:bg-zinc-50">
           Distribute Evenly
         </Button>
-        <div className="ml-auto text-[var(--text-secondary)] text-[14px]">
-          Total: <span className="text-[var(--text-primary)] font-semibold tabular-nums">{formatCurrency(grandTotal)}</span>
+        <div className="ml-auto text-zinc-500 text-sm font-medium">
+          Total: <span className="text-black font-bold tabular-nums ml-1">{formatCurrency(grandTotal)}</span>
         </div>
       </div>
 
       {/* Grid Editor */}
-      <div className="bg-[var(--surface-elevated)] rounded-[var(--radius-lg)] border border-[var(--divider)] overflow-hidden">
+      <div className="bg-white rounded-lg border border-zinc-200 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="sticky top-0 bg-[var(--surface-elevated)] border-b border-[var(--divider)]">
+            <thead className="sticky top-0 bg-zinc-50 border-b border-zinc-200">
               <tr>
-                <th className="px-6 py-4 text-left text-[var(--text-secondary)] text-[12px] font-medium uppercase tracking-wide">
+                <th className="px-6 py-4 text-left text-zinc-500 text-xs font-bold uppercase tracking-wider">
                   Month
                 </th>
-                <th className="px-4 py-4 text-right text-[var(--text-secondary)] text-[12px] font-medium uppercase tracking-wide">
+                <th className="px-4 py-4 text-right text-zinc-500 text-xs font-bold uppercase tracking-wider">
                   Engineering
                 </th>
-                <th className="px-4 py-4 text-right text-[var(--text-secondary)] text-[12px] font-medium uppercase tracking-wide">
-                  Marketing
-                </th>
-                <th className="px-4 py-4 text-right text-[var(--text-secondary)] text-[12px] font-medium uppercase tracking-wide">
-                  Others
-                </th>
-                <th className="px-4 py-4 text-right text-[var(--text-secondary)] text-[12px] font-medium uppercase tracking-wide">
+                <th className="px-4 py-4 text-right text-zinc-500 text-xs font-bold uppercase tracking-wider">
                   Total
                 </th>
-                <th className="px-4 py-4 text-right text-[var(--text-secondary)] text-[12px] font-medium uppercase tracking-wide w-28">
+                <th className="px-4 py-4 text-right text-zinc-500 text-xs font-bold uppercase tracking-wider w-28">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--divider-subtle)]">
+            <tbody className="divide-y divide-zinc-100">
               {months.map((month, index) => {
                 const monthTotal = getMonthTotal(month);
                 return (
-                  <tr key={month} className="hover:bg-white/[0.02] transition-colors">
+                  <tr key={month} className="hover:bg-zinc-50 transition-colors group">
                     <td className="px-6 py-3">
-                      <span className="text-[var(--text-primary)] font-medium text-[14px]">
+                      <span className="text-black font-medium text-sm">
                         {formatMonth(month)}
                       </span>
                     </td>
@@ -199,95 +187,44 @@ export function InflowPlan() {
                         value={getDeptAllocation(month, 'ENGINEERING') || ''}
                         placeholder="0"
                         onChange={(e) => handleInputChange(month, 'ENGINEERING', parseFloat(e.target.value) || 0)}
-                        className="w-24 px-2 py-1.5 bg-[var(--surface-base)] border border-[var(--divider)] rounded-[var(--radius-md)] text-[var(--text-primary)] text-right tabular-nums text-[13px] focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)]"
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <input
-                        type="number"
-                        step="1"
-                        min="0"
-                        value={getDeptAllocation(month, 'MARKETING') || ''}
-                        placeholder="0"
-                        onChange={(e) => handleInputChange(month, 'MARKETING', parseFloat(e.target.value) || 0)}
-                        className="w-24 px-2 py-1.5 bg-[var(--surface-base)] border border-[var(--divider)] rounded-[var(--radius-md)] text-[var(--text-primary)] text-right tabular-nums text-[13px] focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)]"
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <input
-                        type="number"
-                        step="1"
-                        min="0"
-                        value={getDeptAllocation(month, 'OTHERS') || ''}
-                        placeholder="0"
-                        onChange={(e) => handleInputChange(month, 'OTHERS', parseFloat(e.target.value) || 0)}
-                        className="w-24 px-2 py-1.5 bg-[var(--surface-base)] border border-[var(--divider)] rounded-[var(--radius-md)] text-[var(--text-primary)] text-right tabular-nums text-[13px] focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)]"
+                        className="w-full px-3 py-2 bg-white border border-zinc-200 rounded text-black text-right tabular-nums text-sm focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-all"
                       />
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <span className="text-[var(--text-primary)] font-semibold tabular-nums text-[14px]">
+                      <span className="text-black font-bold tabular-nums text-sm">
                         {formatCurrency(monthTotal)}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleCopyPrevious(month, index)}
-                        disabled={index === 0}
-                        className="!h-7 !text-[12px]"
-                      >
-                        <Copy className="w-3 h-3" />
-                        Copy
-                      </Button>
+                      {index > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCopyPrevious(month, index)}
+                          className="text-zinc-400 hover:text-black hover:bg-zinc-200 opacity-0 group-hover:opacity-100 transition-all"
+                          title="Copy from previous month"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 );
               })}
             </tbody>
-            <tfoot className="border-t border-[var(--divider)] bg-[var(--surface-elevated)]">
+            <tfoot className="bg-zinc-50 border-t border-zinc-200">
               <tr>
-                <td className="px-6 py-4 text-[var(--text-secondary)] font-medium">
-                  Total ({months.length} months)
+                <td className="px-6 py-4 text-sm font-bold text-black">Total</td>
+                <td className="px-4 py-4 text-right text-sm font-bold text-black tabular-nums">
+                  {/* Engineering Column Total would go here if needed */}
                 </td>
-                <td className="px-4 py-4 text-right text-blue-400 font-medium tabular-nums">
-                  {formatCurrency(months.reduce((sum, m) => sum + getDeptAllocation(m, 'ENGINEERING'), 0))}
-                </td>
-                <td className="px-4 py-4 text-right text-purple-400 font-medium tabular-nums">
-                  {formatCurrency(months.reduce((sum, m) => sum + getDeptAllocation(m, 'MARKETING'), 0))}
-                </td>
-                <td className="px-4 py-4 text-right text-amber-400 font-medium tabular-nums">
-                  {formatCurrency(months.reduce((sum, m) => sum + getDeptAllocation(m, 'OTHERS'), 0))}
-                </td>
-                <td className="px-4 py-4 text-right text-[var(--text-primary)] font-semibold tabular-nums text-[18px]">
+                <td className="px-4 py-4 text-right text-sm font-bold text-black tabular-nums">
                   {formatCurrency(grandTotal)}
                 </td>
                 <td></td>
               </tr>
             </tfoot>
           </table>
-        </div>
-      </div>
-
-      {/* Budget Cap Reference */}
-      <div className="bg-[var(--surface-elevated)] rounded-[var(--radius-lg)] border border-[var(--divider)] p-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-[var(--text-tertiary)] text-[12px] uppercase tracking-wide mb-1">
-              Project Budget Cap
-            </div>
-            <div className="text-[var(--text-primary)] text-[20px] font-semibold tabular-nums">
-              {formatCurrency(config.capTotalCr)}
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="text-[var(--text-tertiary)] text-[12px] uppercase tracking-wide mb-1">
-              Planned vs Cap
-            </div>
-            <div className={`text-[18px] font-semibold tabular-nums ${grandTotal > config.capTotalCr ? 'text-rose-400' : 'text-emerald-400'}`}>
-              {grandTotal > config.capTotalCr ? '+' : ''}{formatCurrency(grandTotal - config.capTotalCr)}
-            </div>
-          </div>
         </div>
       </div>
     </div>
