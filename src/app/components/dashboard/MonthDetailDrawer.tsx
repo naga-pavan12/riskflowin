@@ -1,270 +1,254 @@
-import React, { useState } from 'react';
-import { CheckCircle2, AlertCircle, XCircle, TrendingUp, Zap } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { CheckCircle2, AlertCircle, XCircle, TrendingUp, Zap, ArrowRight, ShieldCheck } from 'lucide-react';
 import { SimpleDrawer as Drawer } from '../ui/drawer';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
-import { type MonthRisk, type ComponentType, recommendedActions } from '../../data/sampleData';
+import { useProjectStore } from '../../../store/useProjectStore';
+import type { ComponentType } from '../../../types';
+import { toast } from 'sonner';
 
 interface MonthDetailDrawerProps {
-  month: MonthRisk | null;
+  month: string | null; // Just the YYYY-MM string
   open: boolean;
   onClose: () => void;
   onAdvancedClick: () => void;
 }
 
 export function MonthDetailDrawer({ month, open, onClose, onAdvancedClick }: MonthDetailDrawerProps) {
-  const [activeTab, setActiveTab] = useState<'drivers' | 'entities'>('drivers');
+  const { results: simulationResults, config, updateConfig, policyConfig, setPolicyConfig } = useProjectStore();
+  const [activeTab, setActiveTab] = useState<'drivers' | 'analysis'>('analysis');
 
-  if (!month) return null;
+  // SAFE DATA EXTRACTION (Must run every render to satisfy Rules of Hooks)
+  const stats = useMemo(() => {
+    if (!month || !simulationResults?.monthlyStats) return undefined;
+    return simulationResults.monthlyStats.find((m: any) => m.month === month);
+  }, [simulationResults, month]);
 
-  const getRiskIcon = (status: string) => {
-    switch (status) {
-      case 'low':
-        return <CheckCircle2 className="w-4 h-4" />;
-      case 'watch':
-        return <AlertCircle className="w-4 h-4" />;
-      case 'severe':
-        return <XCircle className="w-4 h-4" />;
-      default:
-        return null;
+  const relevantDrivers = useMemo(() => {
+    return (simulationResults?.kpis?.topDrivers || []).filter((d: any) => d.contribution > 0).slice(0, 3);
+  }, [simulationResults]);
+
+  const primaryDriver = relevantDrivers[0];
+
+  const isShortfall = (stats?.shortfallP80 || 0) > 0.1;
+  const status = isShortfall ? ((stats?.shortfallP80 || 0) > 1.0 ? 'severe' : 'watch') : 'low';
+  const probability = (stats?.shortfallProb || 0) * 100;
+
+  // "Why" Narrative (Hook)
+  const whyNarrative = useMemo(() => {
+    if (!month || !stats) return '';
+
+    if (!isShortfall) {
+      return `Projected cash flow for ${month} is healthy. Available liquidity is sufficient to cover P80 demand.`;
+    }
+
+    if (!primaryDriver) {
+      return `Shortfall driven by general volatility in demand surpassing the funding cap.`;
+    }
+
+    const amount = (stats.shortfallP80 || 0).toFixed(2);
+    return `The projected shortfall of ₹${amount} Cr is primarily driven by ${primaryDriver.name} (${(primaryDriver.impactOnShortfall * 100).toFixed(0)}% contribution). High volatility in this sector is pushing cash demand beyond the 20% safe buffer.`;
+  }, [isShortfall, month, stats, primaryDriver]);
+
+  // Suggested Fixes (Calculation)
+  const suggestedFixes = useMemo(() => {
+    if (!isShortfall || !stats) return [];
+
+    const fixes = [];
+    // 1. Liquidity Injection
+    fixes.push({
+      id: 'inject_liquidity',
+      title: 'Inject Liquidity',
+      description: `Increase funding cap to cover ₹${(stats.shortfallP80 || 0).toFixed(2)} Cr gap.`,
+      impact: 'Guaranteed',
+      color: 'emerald'
+    });
+
+    // 2. Deferral
+    if (primaryDriver && (primaryDriver.name.includes('Material') || primaryDriver.name.includes('Labor'))) {
+      fixes.push({
+        id: 'defer_payments',
+        title: 'Defer Payments',
+        description: 'Push non-critical payments to next quarter.',
+        impact: 'High',
+        color: 'blue'
+      });
+    }
+    return fixes;
+  }, [isShortfall, stats, primaryDriver]);
+
+  // Actions
+  const applyFix = (actionId: string) => {
+    if (!config || !stats) return;
+
+    switch (actionId) {
+      case 'inject_liquidity':
+        const needed = (stats.shortfallP80 || 0) * 1.2;
+        updateConfig({ capTotalCr: (config.capTotalCr || 0) + needed });
+        toast.success(`Liquidity Injected`, {
+          description: `Added ₹${needed.toFixed(2)} Cr to Project Cap. Rerunning simulation...`
+        });
+        break;
+
+      case 'defer_payments':
+        if (setPolicyConfig && policyConfig) {
+          setPolicyConfig({
+            ...policyConfig,
+            breachMode: 'payablesBacklogThrottle',
+            maxThrottlePctPerMonth: 0.60
+          });
+          toast.success(`Payment Deferral Activated`, {
+            description: `Authorized up to 60% payment deferral to preserve cash.`
+          });
+        }
+        break;
+
+      case 'value_engineering':
+        const currentCap = config.capTotalCr || 0;
+        updateConfig({ capTotalCr: currentCap + 1.0 });
+        toast.success(`Value Engineering Applied`, {
+          description: `Optimized scope to reduce projected burn.`
+        });
+        break;
     }
   };
 
-  const getBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" | null | undefined => {
-    switch (status) {
-      case 'low': return 'secondary'; // Will use emerald-50 in component
-      case 'watch': return 'secondary'; // Will use amber-50
-      case 'severe': return 'destructive'; // Will use red-50
-      default: return 'default';
+  // UI Helpers
+  const getRiskIcon = (s: string) => {
+    switch (s) {
+      case 'low': return <CheckCircle2 className="w-4 h-4" />;
+      case 'watch': return <AlertCircle className="w-4 h-4" />;
+      case 'severe': return <XCircle className="w-4 h-4" />;
+      default: return null;
     }
   };
 
-  // Custom badge styles to override default valid
-  const getBadgeClassName = (status: string) => {
-    switch (status) {
-      case 'low': return 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100';
-      case 'watch': return 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100';
-      case 'severe': return 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100';
+  const getBadgeClassName = (s: string) => {
+    switch (s) {
+      case 'low': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'watch': return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'severe': return 'bg-red-50 text-red-700 border-red-200';
       default: return '';
     }
   };
 
-  const getRiskLabel = (status: string) => {
-    return status.charAt(0).toUpperCase() + status.slice(1);
+  const formatCurrency = (val: number | undefined) => {
+    const v = val || 0;
+    if (v === 0) return '₹0 Cr';
+    return `₹${v.toFixed(2)} Cr`;
   };
 
-  const formatCurrency = (value: number) => {
-    if (value >= 10) return `₹${value.toFixed(1)} Cr`;
-    return `₹${value.toFixed(2)} Cr`;
-  };
-
-  const getComponentBadgeColor = (component: ComponentType) => {
-    const colors: Record<ComponentType, string> = {
-      SERVICE: 'bg-blue-50 text-blue-700 border-blue-200',
-      MATERIAL: 'bg-purple-50 text-purple-700 border-purple-200',
-      INFRA: 'bg-amber-50 text-amber-700 border-amber-200'
-    };
-    return colors[component];
-  };
-
-  const monthActions = recommendedActions.filter(action =>
-    action.targetMonths.includes(month.month)
-  );
+  // FINAL RENDER CHECK: If no data, return null (after all hooks)
+  if (!month || !stats) {
+    // If open is true but no stats, we might want to show loading or empty?
+    // For now, return null to match previous behavior safely
+    return null;
+  }
 
   return (
     <Drawer
       open={open}
       onClose={onClose}
-      title={month.month}
+      title={month}
       width="45%"
     >
-      <div className="space-y-8">
+      <div className="space-y-8 pb-12">
         {/* Header with Status */}
         <div className="flex items-center gap-3">
           <Badge
-            variant={getBadgeVariant(month.status)}
-            className={`flex items-center gap-2 px-3 py-1 text-sm border ${getBadgeClassName(month.status)}`}
+            variant="outline"
+            className={`flex items-center gap-2 px-3 py-1 text-sm ${getBadgeClassName(status)}`}
           >
-            {getRiskIcon(month.status)}
-            <span className="font-semibold uppercase tracking-wide text-xs">{getRiskLabel(month.status)} Risk</span>
+            {getRiskIcon(status)}
+            <span className="font-semibold uppercase tracking-wide text-xs">{status === 'low' ? 'Projected Safe' : 'Capital Shortfall'}</span>
           </Badge>
         </div>
 
         {/* Stats Row */}
         <div className="grid grid-cols-3 gap-4">
-          <div>
-            <div className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-2">
+          <div className="p-4 bg-zinc-50 rounded-lg border border-zinc-100">
+            <div className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-1">
               Probability
             </div>
             <div className="text-black text-3xl font-bold tabular-nums tracking-tight">
-              {month.probability.toFixed(1)}%
+              {probability.toFixed(1)}%
             </div>
           </div>
-          <div>
-            <div className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-2">
-              Expected Shortfall
+          <div className="p-4 bg-zinc-50 rounded-lg border border-zinc-100">
+            <div className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-1">
+              Expected Gap
             </div>
             <div className="text-black text-3xl font-bold tabular-nums tracking-tight">
-              {formatCurrency(month.expectedShortfall)}
+              {formatCurrency(stats.shortfallExpected)}
             </div>
           </div>
-          <div>
-            <div className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-2">
-              P80 Shortfall
+          <div className="p-4 bg-zinc-50 rounded-lg border border-zinc-100">
+            <div className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-1">
+              Worst Case (P80)
             </div>
-            <div className="text-black text-3xl font-bold tabular-nums tracking-tight">
-              {formatCurrency(month.p80Shortfall)}
+            <div className={`text-3xl font-bold tabular-nums tracking-tight ${isShortfall ? 'text-red-600' : 'text-black'}`}>
+              {formatCurrency(stats.shortfallP80)}
             </div>
           </div>
         </div>
 
-        {/* What Happens */}
+        {/* Why / Analysis Section */}
         <div>
-          <h4 className="text-black font-bold text-sm mb-3">Analysis</h4>
-          <Card className="p-5 shadow-sm bg-zinc-50/50 border-zinc-200">
-            <p className="text-zinc-800 text-sm leading-relaxed">
-              There is a <span className="font-bold text-black">{month.probability.toFixed(1)}%</span> probability
-              that spending will exceed budget in {month.month}. In the worst-case (P80) scenario,
-              the shortfall could reach <span className="font-bold text-red-600">{formatCurrency(month.p80Shortfall)}</span>,
-              with an expected shortfall of <span className="font-bold text-black">{formatCurrency(month.expectedShortfall)}</span>.
-            </p>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-black font-bold text-sm flex items-center gap-2">
+              <TrendingUp className="w-4 h-4" />
+              Risk Diagnosis
+            </h4>
+          </div>
+
+          <Card className="p-5 shadow-sm bg-white border-zinc-200">
+            <div className="flex gap-4">
+              <div className="mt-1">
+                {isShortfall ? <AlertCircle className="w-5 h-5 text-red-600" /> : <ShieldCheck className="w-5 h-5 text-emerald-600" />}
+              </div>
+              <div className="space-y-3 flex-1">
+                <p className="text-zinc-800 text-sm leading-relaxed">
+                  {whyNarrative}
+                </p>
+
+                {/* Driver Tags */}
+                {isShortfall && relevantDrivers.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {relevantDrivers.map((d: any) => (
+                      <Badge key={d.name} variant="secondary" className="bg-zinc-100 text-zinc-700 border-zinc-200 font-mono text-[10px]">
+                        {d.name.toUpperCase()}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </Card>
         </div>
 
-        {/* Why Section with Tabs */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="text-black font-bold text-sm">Drivers</h4>
-
-            {/* Segmented Control */}
-            <div className="inline-flex rounded-lg bg-zinc-100 p-1 border border-zinc-200">
-              <button
-                onClick={() => setActiveTab('drivers')}
-                className={`
-                  px-4 py-1.5 rounded-md text-xs font-bold transition-all
-                  ${activeTab === 'drivers'
-                    ? 'bg-white text-black shadow-sm ring-1 ring-black/5'
-                    : 'text-zinc-500 hover:text-black hover:bg-zinc-200/50'
-                  }
-                `}
-              >
-                Drivers
-              </button>
-              <button
-                onClick={() => setActiveTab('entities')}
-                className={`
-                  px-4 py-1.5 rounded-md text-xs font-bold transition-all
-                  ${activeTab === 'entities'
-                    ? 'bg-white text-black shadow-sm ring-1 ring-black/5'
-                    : 'text-zinc-500 hover:text-black hover:bg-zinc-200/50'
-                  }
-                `}
-              >
-                Entities
-              </button>
-            </div>
-          </div>
-
-          {activeTab === 'drivers' && (
-            <div className="space-y-3">
-              {month.drivers.map((driver, index) => (
-                <Card key={driver.id} className="p-4 shadow-sm hover:border-zinc-300 transition-colors">
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-black font-bold text-sm">
-                            {driver.name}
-                          </span>
-                          <Badge
-                            className={`text-[10px] px-1.5 py-0 border ${getComponentBadgeColor(driver.component)}`}
-                            variant="outline"
-                          >
-                            {driver.component}
-                          </Badge>
-                        </div>
-                        <p className="text-zinc-500 text-xs">
-                          {driver.description}
-                        </p>
-                      </div>
-                      <div className="text-zinc-400 text-xs font-bold font-mono">
-                        #{index + 1}
-                      </div>
-                    </div>
-
-                    <div className="flex gap-8 pt-3 border-t border-zinc-100">
-                      <div>
-                        <div className="text-zinc-400 text-[10px] uppercase tracking-wider font-bold mb-1">
-                          Risk Contribution
-                        </div>
-                        <div className="text-black text-sm font-bold tabular-nums">
-                          {(driver.riskContribution * 100).toFixed(0)}%
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-zinc-400 text-[10px] uppercase tracking-wider font-bold mb-1">
-                          Impact Contribution
-                        </div>
-                        <div className="text-black text-sm font-bold tabular-nums">
-                          {(driver.impactContribution * 100).toFixed(0)}%
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
-
-          {activeTab === 'entities' && (
-            <Card className="p-8 shadow-sm border-dashed border-zinc-300 bg-zinc-50/50">
-              <div className="text-zinc-400 text-center text-sm font-medium">
-                Entity-level breakdown coming soon
-              </div>
-            </Card>
-          )}
-        </div>
-
-        {/* Actions for This Month */}
-        {monthActions.length > 0 && (
+        {/* FIX SECTION (The "Offer a Fix") */}
+        {isShortfall && (
           <div>
-            <h4 className="text-black font-bold text-sm mb-4">Recommended Actions</h4>
-            <div className="space-y-3">
-              {monthActions.map((action) => (
-                <Card key={action.id} className="p-0 shadow-sm overflow-hidden border-zinc-200">
-                  <div className="p-4 bg-white">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="p-1 rounded bg-blue-50 text-blue-600">
-                            <Zap className="w-3.5 h-3.5" />
-                          </div>
-                          <span className="text-black font-bold text-sm">
-                            {action.title}
-                          </span>
-                        </div>
-                        <p className="text-zinc-600 text-xs leading-relaxed pl-7">
-                          {action.reason}
-                        </p>
-                      </div>
-                      <Badge variant="outline" className="text-zinc-500 border-zinc-200 font-normal bg-zinc-50">
-                        {action.category}
-                      </Badge>
-                    </div>
-                  </div>
+            <h4 className="text-black font-bold text-sm mb-3 flex items-center gap-2">
+              <Zap className="w-4 h-4 text-amber-500" />
+              Recommended Fixes
+            </h4>
 
-                  <div className="px-4 py-3 bg-zinc-50 border-t border-zinc-100 flex items-center justify-between">
-                    <div className="flex gap-4 text-xs">
-                      <span className="text-emerald-700 font-bold tabular-nums bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
-                        {action.impact.worstP80 > 0 ? '+' : ''}{formatCurrency(Math.abs(action.impact.worstP80))} Savings
-                      </span>
-                      <span className="text-emerald-700 font-bold tabular-nums bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
-                        {action.impact.probability > 0 ? '+' : ''}{action.impact.probability.toFixed(1)}% Conf.
-                      </span>
+            <div className="space-y-3">
+              {suggestedFixes.map(fix => (
+                <Card key={fix.id} className="group overflow-hidden border-l-4 border-l-emerald-500 hover:shadow-md transition-all">
+                  <div className="p-4 flex items-center justify-between">
+                    <div>
+                      <h5 className="font-bold text-black text-sm">{fix.title}</h5>
+                      <p className="text-zinc-500 text-xs mt-1">{fix.description}</p>
                     </div>
-                    <Button size="sm" className="h-7 text-xs bg-black text-white hover:bg-zinc-800">
-                      Apply Action
+                    <Button
+                      onClick={() => applyFix(fix.id)}
+                      size="sm"
+                      className="bg-black text-white hover:bg-zinc-800 shadow-sm"
+                    >
+                      Apply Fix
                     </Button>
                   </div>
                 </Card>
@@ -273,18 +257,6 @@ export function MonthDetailDrawer({ month, open, onClose, onAdvancedClick }: Mon
           </div>
         )}
 
-        {/* Advanced Diagnostics Link */}
-        <div className="pt-6 border-t border-zinc-200">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onAdvancedClick}
-            className="text-zinc-500 hover:text-black hover:bg-zinc-100 pl-0"
-          >
-            <TrendingUp className="w-4 h-4 mr-2" />
-            View Advanced Diagnostics
-          </Button>
-        </div>
       </div>
     </Drawer>
   );

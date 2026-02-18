@@ -13,21 +13,21 @@ import { RecordedActuals } from './components/config/RecordedActuals';
 import { CurrentMonthActuals } from './components/config/CurrentMonthActuals';
 import { RiskSetup } from './components/config/RiskSetup';
 import { ActualInflow } from './components/config/ActualInflow';
-import { InterventionFeed } from './god-mode/InterventionFeed';
-import { GodModeProvider } from '../store/useGodModeStore';
-import { useProjectStore } from '../store/useProjectStore';
 // Design tokens moved to artifact: .gemini/antigravity/brain/<conversation-id>/design-system.md
 import { type MonthRisk } from './data/sampleData';
 
+import { Zap, BrainCircuit } from 'lucide-react';
+import { ErrorBoundary } from './components/ErrorBoundary';
+
 export default function App() {
   const [currentView, setCurrentView] = useState('dashboard');
-  const [selectedMonth, setSelectedMonth] = useState<MonthRisk | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [monthDrawerOpen, setMonthDrawerOpen] = useState(false);
   const [advancedDrawerOpen, setAdvancedDrawerOpen] = useState(false);
-  const { currentMonthActuals } = useProjectStore();
+
 
   const handleMonthClick = (month: MonthRisk) => {
-    setSelectedMonth(month);
+    setSelectedMonth(month.month);
     setMonthDrawerOpen(true);
   };
 
@@ -54,8 +54,6 @@ export default function App() {
         return <RiskSetup />;
       case 'actual-inflow':
         return <ActualInflow />;
-      case 'god-mode':
-        return <GodModeProvider currentMonthActuals={currentMonthActuals}><InterventionFeed /></GodModeProvider>;
       // Design tokens view removed - see design-system.md artifact
       default:
         return <Dashboard onMonthClick={handleMonthClick} />;
@@ -84,12 +82,14 @@ export default function App() {
         </main>
 
         {/* Drawers */}
-        <MonthDetailDrawer
-          month={selectedMonth}
-          open={monthDrawerOpen}
-          onClose={() => setMonthDrawerOpen(false)}
-          onAdvancedClick={handleAdvancedClick}
-        />
+        <ErrorBoundary componentName="MonthDetailDrawer">
+          <MonthDetailDrawer
+            month={selectedMonth}
+            open={monthDrawerOpen}
+            onClose={() => setMonthDrawerOpen(false)}
+            onAdvancedClick={handleAdvancedClick}
+          />
+        </ErrorBoundary>
 
         <AdvancedDrawer
           open={advancedDrawerOpen}

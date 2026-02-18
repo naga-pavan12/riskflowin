@@ -212,7 +212,7 @@ export function RiskSetup() {
                     <div className="md:col-span-2">
                         <label className="flex items-center gap-2 text-sm font-medium text-zinc-600 mb-3 uppercase tracking-wide">
                             <CloudRain className="w-4 h-4 text-zinc-400" />
-                            Rain / Monsoon Season (40% productivity loss)
+                            Rain / Monsoon Season (10% productivity loss)
                         </label>
                         <div className="flex gap-2 flex-wrap">
                             {MONTH_NAMES.map((name, i) => {
@@ -236,8 +236,118 @@ export function RiskSetup() {
                 </div>
             </section>
 
-            {/* Funding Risk */}
+            {/* Design & Quality Risk (NEW) */}
             <section className="bg-white border border-zinc-200 rounded-lg p-6 shadow-sm">
+                <h2 className="text-lg font-semibold text-black flex items-center gap-2 mb-5">
+                    <BarChart3 className="w-5 h-5 text-black" />
+                    Design & Quality
+                </h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Design Maturity */}
+                    <div>
+                        <label className="block text-sm font-medium text-zinc-600 mb-2 uppercase tracking-wide">
+                            Design Maturity Index
+                        </label>
+                        <div className="space-y-3">
+                            <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={(riskConfig.design?.completionPct ?? 0.85) * 100}
+                                onChange={e => setRiskConfig({
+                                    ...riskConfig,
+                                    design: { completionPct: Number(e.target.value) / 100 }
+                                })}
+                                className="w-full accent-black h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer"
+                            />
+                            <div className="flex justify-between text-xs font-medium">
+                                <span className="text-red-600">Initial (0%)</span>
+                                <span className="text-black font-mono text-lg">
+                                    {((riskConfig.design?.completionPct ?? 0.85) * 100).toFixed(0)}%
+                                </span>
+                                <span className="text-emerald-600">Complete (100%)</span>
+                            </div>
+                            <p className="text-xs text-zinc-400">
+                                Low maturity = Higher probability of Scope Drift & Variations
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Quality / First Time Right */}
+                    <div>
+                        <label className="block text-sm font-medium text-zinc-600 mb-2 uppercase tracking-wide">
+                            First Time Right % (Quality)
+                        </label>
+                        <div className="space-y-3">
+                            <input
+                                type="range"
+                                min="50"
+                                max="100"
+                                value={(riskConfig.quality?.firstTimeRightPct ?? 0.90) * 100}
+                                onChange={e => setRiskConfig({
+                                    ...riskConfig,
+                                    quality: { firstTimeRightPct: Number(e.target.value) / 100 }
+                                })}
+                                className="w-full accent-black h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer"
+                            />
+                            <div className="flex justify-between text-xs font-medium">
+                                <span className="text-red-600">Poor (50%)</span>
+                                <span className="text-black font-mono text-lg">
+                                    {((riskConfig.quality?.firstTimeRightPct ?? 0.90) * 100).toFixed(0)}%
+                                </span>
+                                <span className="text-emerald-600">Excellent (100%)</span>
+                            </div>
+                            <p className="text-xs text-zinc-400">
+                                Lower % increases Rework Costs & Schedule Drag
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section >
+
+            {/* Supply Chain Risk (NEW) */}
+            < section className="bg-white border border-zinc-200 rounded-lg p-6 shadow-sm" >
+                <h2 className="text-lg font-semibold text-black flex items-center gap-2 mb-5">
+                    <Gauge className="w-5 h-5 text-black" />
+                    Supply Chain
+                </h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Vendor Reliability */}
+                    <div>
+                        <label className="block text-sm font-medium text-zinc-600 mb-2 uppercase tracking-wide">
+                            Vendor Reliability Score
+                        </label>
+                        <div className="space-y-3">
+                            <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={(riskConfig.supply?.vendorReliability ?? 0.85) * 100}
+                                onChange={e => setRiskConfig({
+                                    ...riskConfig,
+                                    supply: { vendorReliability: Number(e.target.value) / 100 }
+                                })}
+                                className="w-full accent-black h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer"
+                            />
+                            <div className="flex justify-between text-xs font-medium">
+                                <span className="text-red-600">Unreliable (0%)</span>
+                                <span className="text-black font-mono text-lg">
+                                    {((riskConfig.supply?.vendorReliability ?? 0.85) * 100).toFixed(0)}%
+                                </span>
+                                <span className="text-emerald-600">Partner (100%)</span>
+                            </div>
+                            <p className="text-xs text-zinc-400">
+                                Impact on Material Availability & Lead Times
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section >
+
+            {/* Funding Risk */}
+            < section className="bg-white border border-zinc-200 rounded-lg p-6 shadow-sm" >
                 <h2 className="text-lg font-semibold text-black flex items-center gap-2 mb-5">
                     <DollarSign className="w-5 h-5 text-black" />
                     Funding Risk
@@ -305,39 +415,41 @@ export function RiskSetup() {
                         <p className="text-xs text-zinc-400 mt-1">Minimum physical progress required</p>
                     </div>
                 </div>
-            </section>
+            </section >
 
             {/* Manual Threats */}
-            <section className="bg-white border border-zinc-200 rounded-lg p-6 shadow-sm">
+            < section className="bg-white border border-zinc-200 rounded-lg p-6 shadow-sm" >
                 <h2 className="text-lg font-semibold text-black flex items-center gap-2 mb-5">
                     <AlertTriangle className="w-5 h-5 text-black" />
                     Manual Threats
                 </h2>
 
                 {/* Existing Threats */}
-                {riskConfig.threats.length > 0 && (
-                    <div className="mb-6 space-y-2">
-                        {riskConfig.threats.map(threat => (
-                            <div
-                                key={threat.id}
-                                className="flex items-center justify-between px-4 py-3 bg-zinc-50 rounded-none border border-zinc-200"
-                            >
-                                <div className="flex items-center gap-4">
-                                    <span className="text-black font-medium text-sm">{threat.name}</span>
-                                    <span className="text-xs text-zinc-500 font-mono">Month {threat.month}</span>
-                                    <span className="text-black font-bold text-sm">₹{threat.amount} Cr</span>
-                                    <span className="text-xs text-zinc-500">{(threat.probability * 100).toFixed(0)}% prob</span>
-                                </div>
-                                <button
-                                    onClick={() => removeThreat(threat.id)}
-                                    className="text-zinc-400 hover:text-red-600 transition-colors"
+                {
+                    riskConfig.threats.length > 0 && (
+                        <div className="mb-6 space-y-2">
+                            {riskConfig.threats.map(threat => (
+                                <div
+                                    key={threat.id}
+                                    className="flex items-center justify-between px-4 py-3 bg-zinc-50 rounded-none border border-zinc-200"
                                 >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                )}
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-black font-medium text-sm">{threat.name}</span>
+                                        <span className="text-xs text-zinc-500 font-mono">Month {threat.month}</span>
+                                        <span className="text-black font-bold text-sm">₹{threat.amount} Cr</span>
+                                        <span className="text-xs text-zinc-500">{(threat.probability * 100).toFixed(0)}% prob</span>
+                                    </div>
+                                    <button
+                                        onClick={() => removeThreat(threat.id)}
+                                        className="text-zinc-400 hover:text-red-600 transition-colors"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )
+                }
 
                 {/* Add New Threat */}
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
@@ -396,7 +508,7 @@ export function RiskSetup() {
                         Add
                     </Button>
                 </div>
-            </section>
-        </div>
+            </section >
+        </div >
     );
 }

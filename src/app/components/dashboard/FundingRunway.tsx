@@ -61,23 +61,7 @@ export const FundingRunway: React.FC<FundingRunwayProps> = ({ stats }) => {
                         </tr>
                     ))}
 
-                    {/* Recommendation Row */}
-                    <tr className="bg-blue-50 border-t border-blue-100">
-                        <td className="px-5 py-4 border-r border-blue-100">
-                            <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider leading-none">Recommended<br />Adjustment</span>
-                        </td>
-                        <td colSpan={2} className="px-5 py-4 text-[11px] font-medium text-blue-800">
-                            Align engineering start-dates to match P20 inflow capacity to avoid stoppage risk.
-                        </td>
-                        <td className="px-5 py-4 text-sm font-bold text-right text-blue-700 tabular-nums">
-                            -₹{futureStats.reduce((sum: number, s: any) => sum + (s.gapToFix || 0), 0).toFixed(1)} <span className="text-[10px] opacity-60 ml-0.5 uppercase">CR</span>
-                        </td>
-                        <td className="px-5 py-4 text-center">
-                            <button className="text-[10px] font-bold uppercase tracking-wide bg-blue-600 text-white px-3 py-1.5 hover:bg-blue-700 transition-colors inline-flex items-center gap-1 shadow-sm">
-                                Apply <ArrowRight size={10} />
-                            </button>
-                        </td>
-                    </tr>
+
                 </tbody>
             </table>
         </div>

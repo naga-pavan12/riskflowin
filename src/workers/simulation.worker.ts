@@ -319,6 +319,9 @@ function runSimulation(params: SimulationParams): SimulationResults {
     const samplePaths: SamplePath[] = [];
     let worstIteration: { id: number; shortfall: number; events: KillChainEvent[] } = { id: -1, shortfall: -1, events: [] };
 
+    // Variance Accumulators (Granular)
+    const globalVariances: Record<string, number> = {};
+
     for (let iter = 0; iter < iterations; iter++) {
         const rng = createRandom(seed + iter);
 
@@ -329,11 +332,6 @@ function runSimulation(params: SimulationParams): SimulationResults {
         let reserveRemaining = riskParams.reserve?.enabled ? riskParams.reserve.total : 0;
         let scopeIndex = 0;
         let firstBreachIdx = -1;
-
-        // Iteration Variance Accumulators (for Driver Attribution)
-        let iterMaterialVar = 0;
-        let iterOverrunVar = 0;
-        let iterScopeVar = 0;
 
         // Kill Chain Logging
         const currentEvents: KillChainEvent[] = [];
@@ -387,23 +385,31 @@ function runSimulation(params: SimulationParams): SimulationResults {
                     });
                 }));
             } else {
-                // Apply risk factors to ACTIVE DEMAND (engineeringDemand)
-                const driftStep = sampleNormal(rng, riskParams.scopeDrift!.mean, riskParams.scopeDrift!.sigma);
-                scopeIndex = Math.min(scopeIndex + Math.max(0, driftStep), riskParams.scopeDrift!.cap || 1.0);
-
                 // Rain season productivity factor
                 const calendarMonth = parseInt(month.split('-')[1]);
                 const isRainSeason = riskConfig.execution.rainSeasonMonths.includes(calendarMonth);
-                const rainFactor = isRainSeason ? 0.60 : 1.0; // 40% productivity loss in monsoon
+                const rainFactor = isRainSeason ? 0.90 : 1.0; // 10% productivity loss in monsoon (Updated)
 
                 if (isRainSeason) {
                     currentEvents.push({
                         month,
-                        description: `Monsoon Season (0.6x Efficiency)`,
-                        severity: 'MED',
+                        description: `Monsoon Season (0.9x Efficiency)`,
+                        severity: 'LOW', // Reduced severity
                         impactType: 'SCHEDULE'
                     });
                 }
+
+                // NEW: Design Maturity Impact on Scope Drift
+                // Low maturity (e.g. 0.5) doubles the drift mean and sigma
+                const designMaturity = riskConfig.design?.completionPct ?? 1.0;
+                const designFactor = 1 + (1 - designMaturity);
+
+                // Scale drift parameters by design maturity
+                const driftMean = (riskParams.scopeDrift!.mean) * designFactor;
+                const driftSigma = (riskParams.scopeDrift!.sigma) * designFactor;
+
+                const driftStep = sampleNormal(rng, driftMean, driftSigma);
+                scopeIndex = Math.min(scopeIndex + Math.max(0, driftStep), riskParams.scopeDrift!.cap || 1.0);
 
                 config.entities.forEach(ent => config.activities.forEach(act => {
                     // CRITICAL CHANGE: Use engineeringDemand instead of plannedOutflows for active simulation
@@ -417,13 +423,19 @@ function runSimulation(params: SimulationParams): SimulationResults {
 
                         // Material Volatility + Inflation Bias
                         if (comp === 'MATERIAL') {
+                            // NEW: Vendor Reliability Impact
+                            // Low reliability (e.g. 0.5) increases volatility sigma
+                            const vendorReliability = riskConfig.supply?.vendorReliability ?? 1.0;
+                            const reliabilityPenalty = 1 + (1 - vendorReliability); // 1.0 to 2.0 multiplier
+
                             // Apply monthly inflation bias from riskConfig
                             const monthlyInflation = riskConfig.market.inflationExpectation / 12;
                             const inflationBias = monthlyInflation * (monthIdx + 1); // Cumulative
 
+                            // Apply reliability penalty to sigmaMarket
                             const idioShock = sampleNormal(rng, 0, (riskParams.materialVol?.sigmaIdio || 0.1) * volatilityFactor);
                             const combinedShock = inflationBias
-                                + marketShock * (riskParams.materialVol?.marketWeight || 0.6)
+                                + marketShock * (riskParams.materialVol?.marketWeight || 0.6) * reliabilityPenalty
                                 + idioShock * (1 - (riskParams.materialVol?.marketWeight || 0.6));
                             let matMult = Math.exp(combinedShock);
 
@@ -433,36 +445,67 @@ function runSimulation(params: SimulationParams): SimulationResults {
                                 matMult = clampMax;
                                 validationFlags.clampingOccurred = true;
                             }
-                            const valBeforeMat = val;
                             val *= matMult;
-                            iterMaterialVar += (val - valBeforeMat);
                         }
 
-                        // Execution Overrun (already uses merged riskParams with confidence/contractor risk)
-                        // EXCLUDE MATERIAL: Material volatility covers price, Scope covers quantity. 
-                        // Overrun (Labor Inefficiency) applies mainly to Service/Infra.
+                        // Execution Overrun (Labor/Infra only)
                         if (comp !== 'MATERIAL') {
                             let overrun = sampleNormal(rng, riskParams.overrun!.mean, riskParams.overrun!.sigma * volatilityFactor);
                             const overrunClamp = riskParams.overrun?.clampMax || 0.5;
                             overrun = clamp(overrun, -0.2, overrunClamp);
-
-                            const valBeforeOverrun = val;
                             val *= (1 + overrun);
-                            iterOverrunVar += (val - valBeforeOverrun);
                         }
 
-                        // Scope Drift
-                        const valBeforeScope = val;
+                        // Scope Drift (Impacted by Design Maturity)
                         val *= (1 + scopeIndex);
-                        iterScopeVar += (val - valBeforeScope);
 
-                        // Rain season: SERVICE costs increase (more labor days needed)
+                        // Rain season (Service only)
                         if (comp === 'SERVICE' && isRainSeason) {
-                            val /= rainFactor; // Cost goes UP because productivity goes DOWN
+                            val /= rainFactor; // Cost increases as efficiency drops
                         }
+
+                        // NEW: Quality / Rework Cost
+                        // First Time Right % determines how much work needs to be redone
+                        // Cost Impact: The rework portion is effectively "done twice" (or added cost)
+                        // We treat rework as an additional cost layer
+                        const ftr = riskConfig.quality?.firstTimeRightPct ?? 1.0; // e.g. 0.9
+                        const reworkProb = 1 - ftr; // e.g. 0.1
+
+                        let reworkCost = 0;
+                        // Simulating rework as a probabilistic hit or a constant drag?
+                        // Let's use constant drag for stability, with stochastic noise
+                        // Rework is usually labor/service heavy, but material can be wasted too.
+                        // We apply to all components.
+                        const reworkHit = val * reworkProb;
+                        reworkCost = reworkHit * (1 + sampleNormal(rng, 0, 0.2)); // +/- 20% variance on the rework cost itself
+
+                        val += Math.max(0, reworkCost); // Add rework cost to total
 
                         incurredCost += val;
                         incurredByComponent[comp] += val;
+
+                        // GRANULAR VARIANCE TRACKING (Dynamic Risk Drivers)
+                        if (val !== baseVal) {
+                            const key = `${ent} - ${act} (${comp === 'SERVICE' ? 'Labor' : comp === 'INFRA' ? 'Infra' : 'Material'})`;
+                            globalVariances[key] = (globalVariances[key] || 0) + (val - baseVal);
+
+                            // Attribute specific portions to new drivers if significant
+                            if (reworkCost > 0.1) {
+                                const qualityKey = `Quality Rework - ${ent} (${act})`;
+                                globalVariances[qualityKey] = (globalVariances[qualityKey] || 0) + reworkCost;
+                            }
+
+                            // If design maturity caused scope drift, we could attribute it, 
+                            // but 'Scope Drift' is usually captured inherently by the (val - baseVal) delta relative to Scope Index.
+                            // However, we can track the specific "Design Gap" contribution to drift separately if needed.
+                            /*
+                            if (designFactor > 1.0 && scopeIndex > 0) {
+                                // Approximate contribution of design gap to the drift
+                                const designKey = `Design Gap Drift - ${ent}`;
+                                globalVariances[designKey] = (globalVariances[designKey] || 0) + (val * scopeIndex * (1 - designMaturity));
+                            }
+                            */
+                        }
                     });
                 }));
 
@@ -480,12 +523,18 @@ function runSimulation(params: SimulationParams): SimulationResults {
                                 severity: 'CRITICAL',
                                 impactType: 'COST'
                             });
+
+                            // Track threats as drivers too
+                            const key = `Manual Threat: ${threat.name}`;
+                            globalVariances[key] = (globalVariances[key] || 0) + threat.amount;
                         }
                     }
                 }
             }
 
             // Add schedule debt from previous month (work that was deferred)
+            // ... (Rest of logic remains same, just removing variance accumulators)
+
             const totalWorkLoad = incurredCost + scheduleDebt;
             monthly[month].demands.push(totalWorkLoad);
 
@@ -592,31 +641,6 @@ function runSimulation(params: SimulationParams): SimulationResults {
                 throttlePctThisMonth = 0; // Force zero throttle
                 scheduleDebt = 0;         // No schedule slip due to money
                 deferredThisMonth = 0;
-
-                /* ORIGINAL LOGIC (Commented out for reference)
-                const nextMonthIdx = monthIdx + 1;
-                const nextMonth = months[nextMonthIdx];
-                let plannedNextMonth = 0;
-
-                if (nextMonth) {
-                    config.entities.forEach(ent => config.activities.forEach(act => {
-                        (['SERVICE', 'MATERIAL', 'INFRA'] as const).forEach(comp => {
-                            plannedNextMonth += (engineeringDemand[nextMonth]?.[ent]?.[act] as any)?.[comp] || 0;
-                        });
-                    }));
-                }
-
-                if (plannedNextMonth > 0) {
-                    throttlePctThisMonth = clamp(
-                        unpaid / plannedNextMonth,
-                        0,
-                        policyConfig.maxThrottlePctPerMonth
-                    );
-                    const deferredWork = plannedNextMonth * throttlePctThisMonth;
-                    deferredThisMonth = deferredWork * policyConfig.frictionMultiplier;
-                    scheduleDebt = deferredThisMonth;
-                }
-                */
             }
 
             // Validation checks
@@ -630,11 +654,6 @@ function runSimulation(params: SimulationParams): SimulationResults {
             monthly[month].carryForward.push(carryForward);
             monthly[month].throttlePct.push(throttlePctThisMonth);
         });
-
-        // Store global variance for this iteration (simple attribution)
-        iterMaterialVars.push(iterMaterialVar);
-        iterOverrunVars.push(iterOverrunVar);
-        iterScopeVars.push(iterScopeVar);
 
         firstBreachMonthIdx.push(firstBreachIdx);
 
@@ -751,35 +770,51 @@ function runSimulation(params: SimulationParams): SimulationResults {
     }
 
     // ========================================================================
-    // DRIVER ATTRIBUTION
+    // DRIVER ATTRIBUTION (DYNAMIC)
     // ========================================================================
 
-    // Aggregated Variances across all iterations and months
-    const totalMaterialVar = mean(iterMaterialVars);
-    const totalOverrunVar = mean(iterOverrunVars);
-    const totalScopeVar = mean(iterScopeVars);
-
-    // Normalize to percentages
-    const totalVariance = Math.abs(totalMaterialVar) + Math.abs(totalOverrunVar) + Math.abs(totalScopeVar) + 0.1;
-
-    // Create drivers list
-    const drivers = [
-        { name: 'Material Volatility', val: totalMaterialVar, lever: 'Procurement' },
-        { name: 'Execution Overrun', val: totalOverrunVar, lever: 'Efficiency' },
-        { name: 'Scope Drift', val: totalScopeVar, lever: 'Governance' }
-    ];
-
-    // Sort by impact (absolute value)
-    drivers.sort((a, b) => Math.abs(b.val) - Math.abs(a.val));
-
-    const topDrivers = drivers.map(d => ({
-        name: d.name,
-        contribution: d.val, // In absolute currency (Cr)
-        lever: d.lever,
-        impactOnShortfall: Math.abs(d.val) / totalVariance,
-        impactOnBacklog: 0.2,
-        impactOnScheduleDebt: 0.2
+    // 1. Calculate Average Variance from Granular Map
+    const granularDrivers = Object.entries(globalVariances).map(([key, totalVal]) => ({
+        name: key,
+        meanVal: totalVal / iterations
     }));
+
+    // 2. Sort by Absolute Impact
+    granularDrivers.sort((a, b) => Math.abs(b.meanVal) - Math.abs(a.meanVal));
+
+    // 3. Map to Top Drivers Format
+    const totalVariance = granularDrivers.reduce((sum, d) => sum + Math.abs(d.meanVal), 0) + 0.1;
+
+    const topDrivers = granularDrivers.slice(0, 15).map(d => {
+        let lever = 'Review';
+        if (d.name.includes('Material')) lever = 'Procurement';
+        else if (d.name.includes('Labor')) lever = 'Execution';
+        else if (d.name.includes('Infra')) lever = 'Asset Mgmt';
+        else if (d.name.includes('Threat')) lever = 'Governance';
+
+        return {
+            name: d.name,
+            contribution: d.meanVal,
+            lever,
+            impactOnShortfall: Math.abs(d.meanVal) / totalVariance,
+            impactOnBacklog: 0.2, // Heuristic
+            impactOnScheduleDebt: 0.2
+        };
+    });
+
+    // Determine primary driver (formatted)
+    const primaryDriver = topDrivers.length > 0 ? {
+        key: topDrivers[0].name,
+        contribution: topDrivers[0].contribution
+    } : { key: 'Stable', contribution: 0 };
+
+    // Propose actions based on top driver
+    /*
+    const recommendedActions = [];
+    if (topDrivers[0]?.lever === 'Procurement') {
+        recommendedActions.push({ id: 'hedging', title: 'Start Material Hedging', impact: 'High' });
+    }
+    */
 
     // ========================================================================
     // NOW-CAST (Current Month Projection)

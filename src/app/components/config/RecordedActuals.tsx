@@ -17,6 +17,7 @@ export function RecordedActuals() {
     actualOutflows,
     setActualOutflows,
     plannedOutflows,
+    engineeringDemand,
     copyRange
   } = useProjectStore();
 
@@ -66,7 +67,8 @@ export function RecordedActuals() {
 
   // Get component values for forecast (for comparison)
   const getForecastValues = (entity: string, activity: string, month: string): ComponentValues => {
-    const data = plannedOutflows[month]?.[entity]?.[activity];
+    // Prefer engineeringDemand, fallback to plannedOutflows
+    const data = engineeringDemand[month]?.[entity]?.[activity] || plannedOutflows[month]?.[entity]?.[activity];
     return {
       SERVICE: data?.SERVICE || 0,
       MATERIAL: data?.MATERIAL || 0,
@@ -76,7 +78,10 @@ export function RecordedActuals() {
 
   // Calculate totals for an activity across all entities
   const getActivityTotal = (activity: string, month: string, type: 'actual' | 'forecast'): number => {
-    const outflows = type === 'actual' ? actualOutflows : plannedOutflows;
+    const outflows = type === 'actual'
+      ? actualOutflows
+      : (engineeringDemand?.[month] ? engineeringDemand : plannedOutflows);
+
     let total = 0;
 
     if (!outflows?.[month]) return 0;
@@ -107,8 +112,11 @@ export function RecordedActuals() {
     // Copy planned values to actuals for this month
     setActualOutflows((prev: any) => {
       const next = { ...prev };
-      if (plannedOutflows[selectedMonth]) {
-        next[selectedMonth] = JSON.parse(JSON.stringify(plannedOutflows[selectedMonth]));
+      // Prefer engineeringDemand
+      const sourceData = engineeringDemand[selectedMonth] || plannedOutflows[selectedMonth];
+
+      if (sourceData) {
+        next[selectedMonth] = JSON.parse(JSON.stringify(sourceData));
       }
       return next;
     });

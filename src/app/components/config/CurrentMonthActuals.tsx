@@ -357,7 +357,7 @@ export function CurrentMonthActuals() {
             </div>
 
             {/* ================================================================== */}
-            {/* PULSE CHECK — God Mode Vital Signs */}
+            {/* PULSE CHECK — Vital Signs */}
             {/* ================================================================== */}
             <div className="bg-white rounded-xl border border-indigo-200 shadow-sm overflow-hidden">
                 {/* Header — always visible */}
@@ -372,12 +372,11 @@ export function CurrentMonthActuals() {
                         <div className="text-left">
                             <h3 className="font-bold text-black text-lg flex items-center gap-3">
                                 Pulse Check
-                                <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200 font-semibold text-[10px]">GOD MODE</Badge>
                             </h3>
                             <p className="text-sm text-zinc-500 mt-0.5">
                                 {filledVitals > 0
-                                    ? `${filledVitals} of 11 signals active — feeds the causal risk engine`
-                                    : 'Enter site signals to power the God Mode risk engine'
+                                    ? `${filledVitals} of 11 signals active`
+                                    : 'Enter site signals to power the risk engine'
                                 }
                             </p>
                         </div>
@@ -440,7 +439,7 @@ export function CurrentMonthActuals() {
                         <div className="mt-6 pt-4 border-t border-dashed border-indigo-100">
                             <p className="text-xs text-zinc-400 flex items-center gap-2">
                                 <Zap size={12} className="text-indigo-400" />
-                                These values feed directly into <strong className="text-indigo-500">God Mode</strong> — switch to LIVE mode to run causal inference on real data.
+                                These values feed directly into the <strong className="text-indigo-500">Risk Engine</strong> for enhanced accuracy.
                             </p>
                         </div>
                     </div>

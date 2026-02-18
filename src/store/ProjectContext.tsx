@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import type { ProjectConfig, DeptAllocation, OutflowData, SimulationResults, CurrentMonthActuals, RiskConfig } from '../types';
+import type { ProjectConfig, DeptAllocation, OutflowData, SimulationResults, CurrentMonthActuals, RiskConfig, PolicyConfig } from '../types';
 import { DEFAULT_RISK_CONFIG } from '../types';
 import { addMonths, format, parse } from 'date-fns';
 
@@ -65,6 +65,15 @@ function useProjectState() {
     const [volatilityFactor, setVolatilityFactor] = useState(1.0);
     const [corrStrength, setCorrStrength] = useState(0.5);
     const [riskConfig, setRiskConfig] = useState<RiskConfig>(() => loadFromStorage('riskConfig', DEFAULT_RISK_CONFIG));
+
+    // Policy Config (New)
+    const [policyConfig, setPolicyConfig] = useState<PolicyConfig>(() => loadFromStorage('policyConfig', {
+        breachMode: 'payablesBacklogThrottle',
+        maxThrottlePctPerMonth: 0.40,
+        commitmentRatioDefaults: { SERVICE: 0.50, MATERIAL: 0.80, INFRA: 0.60 },
+        frictionMultiplier: 1.10
+    } as PolicyConfig));
+
     const [isHydrated, setIsHydrated] = useState(false);
 
     const workerRef = useRef<Worker | null>(null);
@@ -125,7 +134,7 @@ function useProjectState() {
 
         const handler = setTimeout(() => {
             localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                config, allocations, plannedOutflows, engineeringDemand, projectedOutflows, actualOutflows, currentMonthActuals, riskConfig
+                config, allocations, plannedOutflows, engineeringDemand, projectedOutflows, actualOutflows, currentMonthActuals, riskConfig, policyConfig
             }));
         }, 1000);
 
@@ -301,6 +310,7 @@ function useProjectState() {
         currentMonthActuals, setCurrentMonthActuals,
         activeScenarios, toggleScenario, resetScenarios,
         riskConfig, setRiskConfig,
+        policyConfig, setPolicyConfig, // Export Policy Config
         updateOutflow,
         copyRange, applyFactor,
         months,

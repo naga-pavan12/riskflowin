@@ -57,12 +57,6 @@ export function AppShell({ children, currentView, onNavigate }: AppShellProps) {
         { id: 'current-month-actuals', label: 'Current Month Actuals', icon: Clock },
       ]
     },
-    {
-      label: 'GOD MODE',
-      items: [
-        { id: 'god-mode', label: 'God Mode', icon: Zap },
-      ]
-    }
   ];
 
   return (

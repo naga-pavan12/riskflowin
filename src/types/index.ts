@@ -79,6 +79,15 @@ export interface RiskConfig {
         contractorRisk: ContractorRisk;
         rainSeasonMonths: number[]; // e.g., [6, 7]
     };
+    design: {
+        completionPct: number; // 0.0 to 1.0
+    };
+    quality: {
+        firstTimeRightPct: number; // 0.0 to 1.0 (rework rate = 1 - this)
+    };
+    supply: {
+        vendorReliability: number; // 0.0 to 1.0
+    };
     funding: {
         collectionEfficiency: number; // e.g., 0.85
         covenantHardStop: boolean;
@@ -102,6 +111,15 @@ export const DEFAULT_RISK_CONFIG: RiskConfig = {
         scheduleConfidence: 0.7,
         contractorRisk: 'reliable',
         rainSeasonMonths: [6, 7, 8, 9], // Jun-Sep
+    },
+    design: {
+        completionPct: 0.85,
+    },
+    quality: {
+        firstTimeRightPct: 0.90,
+    },
+    supply: {
+        vendorReliability: 0.85,
     },
     funding: {
         collectionEfficiency: 0.90,

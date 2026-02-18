@@ -7,26 +7,24 @@ import {
   CheckCircle2,
   AlertCircle,
   XCircle,
-  Info
+  Info,
+  Zap,
+  BrainCircuit
 } from 'lucide-react';
 import { FundingRunway } from './FundingRunway';
 import { CauseStack } from './CauseStack';
-import { ActionPortfolio } from './ActionPortfolio';
 import { RiskCalendar } from './RiskCalendar';
 import { CloseProjection } from './CloseProjection';
 import { BreachRadar } from './BreachRadar';
-
 import { InflowOutflowChart } from './InflowOutflowChart';
 import { MultiverseChart } from './MultiverseChart';
-
 import type { MonthRisk } from '../../data/sampleData';
-import { Card } from '../ui/card';
 import { PulseRail } from './PulseRail';
-import { useUnifiedRisk } from '../../../hooks/useUnifiedRisk';
+import { calculateHeuristicRisk } from '../../../utils/riskHeuristics';
 import { usePulseContext } from '../../../store/PulseContext';
 import { Badge } from '../ui/badge';
-import { Zap, BrainCircuit } from 'lucide-react';
 import { ErrorBoundary } from '../ErrorBoundary';
+import { ActionPortfolio } from './ActionPortfolio';
 
 interface DashboardProps {
   onMonthClick?: (month: MonthRisk) => void;
@@ -34,8 +32,11 @@ interface DashboardProps {
 
 export function Dashboard({ onMonthClick }: DashboardProps) {
   const { results, config, currentMonthActuals, setRiskConfig, riskConfig } = useProjectStore();
-  const { riskProfile, isRefining } = useUnifiedRisk();
   const { state: pulseState } = usePulseContext();
+
+  // Replaced useUnifiedRisk with local heuristic calculation
+  const riskProfile = React.useMemo(() => calculateHeuristicRisk(pulseState), [pulseState]);
+  const isRefining = false;
 
   // Sync Pulse State to Simulation Risk Config
   React.useEffect(() => {
@@ -124,12 +125,6 @@ export function Dashboard({ onMonthClick }: DashboardProps) {
     };
   });
 
-  const healthCounts = monthsData.reduce((acc, m) => {
-    acc[m.status] = (acc[m.status] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-  const total = monthsData.length;
-  // Unused healthPct - removed for brevity if needed, but keeping for safety
   const earlyWarnings = results.earlyWarnings || [];
 
   return (
@@ -267,6 +262,7 @@ export function Dashboard({ onMonthClick }: DashboardProps) {
             plannedTotal={currentMonthStats?.plannedOutflowTotal || 0}
             currentMonth={config.asOfMonth}
           />
+
           <BreachRadar
             breachRadar={results.breachRadar}
             currentMonth={config.asOfMonth}
@@ -318,8 +314,6 @@ export function Dashboard({ onMonthClick }: DashboardProps) {
           <InflowOutflowChart />
           <MultiverseChart />
         </div>
-
-
 
         {/* Monthly Overview */}
         <div className="mb-8">

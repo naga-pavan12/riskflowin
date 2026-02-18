@@ -10,11 +10,14 @@ import {
     ArrowRight,
     AlertTriangle,
     TrendingDown,
-    CheckCircle2
+    CheckCircle2,
+    Play
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Badge } from '../ui/badge';
 import { Card } from '../ui/card';
+import { Button } from '../ui/button';
+import { toast } from 'sonner';
 
 // Trigger suggestions based on simulation results
 const getTriggerSuggestions = (results: any) => {
@@ -54,8 +57,18 @@ const getTriggerSuggestions = (results: any) => {
 };
 
 export const ActionPortfolio: React.FC = () => {
-    const { activeScenarios, toggleScenario, results } = useProjectStore();
+    const {
+        results,
+        config, updateConfig,
+        policyConfig, setPolicyConfig,
+        applyFactor,
+        triggerSimulation,
+        loading
+    } = useProjectStore();
+
     const [selectedPortfolio, setSelectedPortfolio] = useState<string | null>(null);
+    const [applyingAction, setApplyingAction] = useState<string | null>(null);
+    const [appliedActions, setAppliedActions] = useState<string[]>([]); // Track locally for now
 
     const triggers = React.useMemo(() => getTriggerSuggestions(results), [results]);
 
@@ -63,13 +76,27 @@ export const ActionPortfolio: React.FC = () => {
     const portfolios = React.useMemo(() => {
         if (!results) return [];
 
-        // 1. Calculate Total Risk Exposure (Total Gap to Fix across all months)
-        // Default to a baseline if no gap, to show *some* potential improvement
-        const totalGap = Math.max(results.monthlyStats.reduce((sum: number, stat: any) => sum + (stat.gapToFix || 0), 0), 10);
-        const maxShortfallProb = Math.max(...results.monthlyStats.map((s: any) => s.shortfallProb || 0), 0.1);
+        const totalGap = Math.max(results.monthlyStats.reduce((sum: number, stat: any) => sum + (stat.gapToFix || 0), 0), 0);
+        const maxShortfallProb = Math.max(...results.monthlyStats.map((s: any) => s.shortfallProb || 0), 0);
 
-        // 2. Define Strategies with Heuristics scales
-        return [
+        const hasRisk = totalGap > 0 || maxShortfallProb > 0.1;
+
+        const baseGap = hasRisk ? Math.max(totalGap, 10) : 0;
+        const baseProb = hasRisk ? Math.max(maxShortfallProb, 0.1) : 0;
+
+        // Helper to check if an action is already active/applied
+        const isActionActive = (id: string) => {
+            if (appliedActions.includes(id)) return true;
+
+            // Check Store State
+            if (id === 'MD-002' && policyConfig.breachMode === 'payablesBacklogThrottle' && policyConfig.maxThrottlePctPerMonth === 0.20) return true;
+            if (id === 'CS-001' && policyConfig.breachMode === 'payablesBacklogThrottle' && policyConfig.maxThrottlePctPerMonth === 0.40) return true;
+            if (id === 'CS-002' && policyConfig.frictionMultiplier && policyConfig.frictionMultiplier >= 1.3) return true;
+            // Liquidity check is hard via config alone without baseline, so rely on local state or simplistic check
+            return false;
+        };
+
+        const allPortfolios = [
             {
                 id: 'min-disruption',
                 name: 'Min Disruption',
@@ -77,9 +104,8 @@ export const ActionPortfolio: React.FC = () => {
                 icon: Shield,
                 color: 'blue',
                 strategy: 'Defer only uncommitted scope; no vendor impact',
-                // Heuristic: Solves ~15% of the problem
-                deltaCashP50: totalGap * 0.15,
-                deltaShortfallPct: Math.round(maxShortfallProb * 100 * 0.2),
+                deltaCashP50: baseGap * 0.15,
+                deltaShortfallPct: Math.round(baseProb * 100 * 0.2),
                 actions: [
                     {
                         id: 'MD-001',
@@ -88,20 +114,22 @@ export const ActionPortfolio: React.FC = () => {
                         lever: 'Planning',
                         owner: 'PMC Lead',
                         leadTime: 'Immediate',
-                        deltaCashP50: (totalGap * 0.08).toFixed(1),
-                        deltaShortfallProb: -5,
-                        impactLabel: 'Low disruption'
+                        deltaCashP50: (baseGap * 0.08).toFixed(1),
+                        deltaShortfallProb: -(baseProb * 100 * 0.05).toFixed(1),
+                        impactLabel: 'Low disruption',
+                        description: 'Reduces demand by 5% via scope deferral.'
                     },
                     {
                         id: 'MD-002',
-                        title: 'Shift Infra provisioning',
+                        title: 'Minor Payment Throttle',
                         type: 'DEFERRAL',
                         lever: 'Planning',
                         owner: 'Infra Lead',
                         leadTime: '1 Week',
-                        deltaCashP50: (totalGap * 0.07).toFixed(1),
-                        deltaShortfallProb: -3,
-                        impactLabel: 'Minimal'
+                        deltaCashP50: (baseGap * 0.07).toFixed(1),
+                        deltaShortfallProb: -(baseProb * 100 * 0.03).toFixed(1),
+                        impactLabel: 'Minimal',
+                        description: 'Throttles payables backlog by 20%.'
                     }
                 ]
             },
@@ -112,31 +140,32 @@ export const ActionPortfolio: React.FC = () => {
                 icon: TrendingDown,
                 color: 'amber',
                 strategy: 'Reduce invoice lag impact; accelerate slower invoices',
-                // Heuristic: Solves ~35% of the problem
-                deltaCashP50: totalGap * 0.35,
-                deltaShortfallPct: Math.round(maxShortfallProb * 100 * 0.45),
+                deltaCashP50: baseGap * 0.35,
+                deltaShortfallPct: Math.round(baseProb * 100 * 0.45),
                 actions: [
                     {
                         id: 'CS-001',
-                        title: 'Split large POs into tranches',
+                        title: 'Aggressive Payment Throttle',
                         type: 'LAG_REDUCTION',
                         lever: 'Procurement',
                         owner: 'Supply Chain',
                         leadTime: '2 Weeks',
-                        deltaCashP50: (totalGap * 0.20).toFixed(1),
-                        deltaShortfallProb: -12,
-                        impactLabel: 'Vendor negotiation'
+                        deltaCashP50: (baseGap * 0.20).toFixed(1),
+                        deltaShortfallProb: -(baseProb * 100 * 0.12).toFixed(1),
+                        impactLabel: 'Vendor negotiation',
+                        description: 'Throttles payables backlog by 40%.'
                     },
                     {
-                        id: 'CS-003',
-                        title: 'Negotiate extended terms',
+                        id: 'CS-002',
+                        title: 'Extend Payment Terms',
                         type: 'LAG_REDUCTION',
                         lever: 'Governance',
                         owner: 'VP Finance',
                         leadTime: '3 Weeks',
-                        deltaCashP50: (totalGap * 0.15).toFixed(1),
-                        deltaShortfallProb: -8,
-                        impactLabel: 'Contract amendment'
+                        deltaCashP50: (baseGap * 0.15).toFixed(1),
+                        deltaShortfallProb: -(baseProb * 100 * 0.08).toFixed(1),
+                        impactLabel: 'Contract amendment',
+                        description: 'Increases friction multiplier to 1.3x.'
                     }
                 ]
             },
@@ -147,36 +176,113 @@ export const ActionPortfolio: React.FC = () => {
                 icon: Target,
                 color: 'emerald',
                 strategy: 'Lock in prices; cap committed scope; draw reserves',
-                // Heuristic: Solves ~95% of the problem
-                deltaCashP50: totalGap * 0.95,
-                deltaShortfallPct: Math.round(maxShortfallProb * 100 * 0.90),
+                deltaCashP50: baseGap * 0.95,
+                deltaShortfallPct: Math.round(baseProb * 100 * 0.90),
                 actions: [
                     {
                         id: 'RE-001',
-                        title: 'Hedge Allocations (100% Coverage)',
+                        title: 'Inject Liquidity (Cap +20%)',
                         type: 'HEDGING',
                         lever: 'Finance',
                         owner: 'CFO',
                         leadTime: 'Immediate',
-                        deltaCashP50: (totalGap * 0.50).toFixed(1),
-                        deltaShortfallProb: -40,
-                        impactLabel: 'Capital intensive'
+                        deltaCashP50: (baseGap * 0.50).toFixed(1),
+                        deltaShortfallProb: -(baseProb * 100 * 0.40).toFixed(1),
+                        impactLabel: 'Capital intensive',
+                        description: 'Increases project cap by 20%.'
                     },
                     {
                         id: 'RE-002',
-                        title: 'Cap Material Scope',
+                        title: 'Major Scope Reduction',
                         type: 'SCOPE_CUT',
                         lever: 'Engineering',
                         owner: 'Project Director',
                         leadTime: '1 Month',
-                        deltaCashP50: (totalGap * 0.45).toFixed(1),
-                        deltaShortfallProb: -35,
-                        impactLabel: 'Significant scope reduction'
+                        deltaCashP50: (baseGap * 0.45).toFixed(1),
+                        deltaShortfallProb: -(baseProb * 100 * 0.35).toFixed(1),
+                        impactLabel: 'Significant scope reduction',
+                        description: 'Reduces demand by 15% across all items.'
                     }
                 ]
             }
         ];
-    }, [results]);
+
+        // Filter actions: Include only those NOT Active and RELEVANT (impact > 0)
+        return allPortfolios.map(p => {
+            const validActions = p.actions.filter(a => {
+                // Check if effective impact is near zero
+                const isZeroImpact = parseFloat(a.deltaCashP50) <= 0.01 && Math.abs(parseFloat(String(a.deltaShortfallProb))) < 0.1;
+                return !isActionActive(a.id) && !isZeroImpact;
+            });
+
+            return {
+                ...p,
+                availableActions: validActions,
+                allActions: p.actions
+            };
+        });
+    }, [results, appliedActions, policyConfig]);
+
+    const handleApplyAction = async (actionId: string, portfolioId: string) => {
+        setApplyingAction(actionId);
+
+        try {
+            await new Promise(resolve => setTimeout(resolve, 500)); // UI delay
+
+            switch (actionId) {
+                case 'MD-001':
+                    applyFactor('OUTFLOW', 'engineering', results?.monthlyStats.filter((m: any) => !m.isHistorical).map((m: any) => m.month) || [], 0.95);
+                    toast.success('Scope Deferral Applied', { description: 'Reduced engineering demand by 5%.' });
+                    break;
+
+                case 'MD-002':
+                    setPolicyConfig({
+                        ...policyConfig,
+                        breachMode: 'payablesBacklogThrottle',
+                        maxThrottlePctPerMonth: 0.20
+                    });
+                    toast.success('Minor Throttle Applied', { description: 'Payables backlog throttle set to 20%.' });
+                    break;
+
+                case 'CS-001':
+                    setPolicyConfig({
+                        ...policyConfig,
+                        breachMode: 'payablesBacklogThrottle',
+                        maxThrottlePctPerMonth: 0.40
+                    });
+                    toast.success('Aggressive Throttle Applied', { description: 'Payables backlog throttle set to 40%.' });
+                    break;
+
+                case 'CS-002':
+                    setPolicyConfig({
+                        ...policyConfig,
+                        frictionMultiplier: 1.3
+                    });
+                    toast.success('Payment Terms Extended', { description: 'Payment friction multiplier increased to 1.3x.' });
+                    break;
+
+                case 'RE-001':
+                    const currentCap = config.capTotalCr || 0;
+                    updateConfig({ capTotalCr: currentCap * 1.2 });
+                    toast.success('Liquidity Injected', { description: `Project cap increased to ₹${(currentCap * 1.2).toFixed(0)} Cr.` });
+                    break;
+
+                case 'RE-002':
+                    applyFactor('OUTFLOW', 'engineering', results?.monthlyStats.filter((m: any) => !m.isHistorical).map((m: any) => m.month) || [], 0.85);
+                    toast.success('Major Scope Cut Applied', { description: 'Reduced engineering demand by 15%.' });
+                    break;
+            }
+
+            setAppliedActions(prev => [...prev, actionId]);
+            triggerSimulation();
+
+        } catch (e) {
+            console.error(e);
+            toast.error('Failed to apply action');
+        } finally {
+            setApplyingAction(null);
+        }
+    };
 
     const colorStyles: any = {
         blue: {
@@ -237,6 +343,7 @@ export const ActionPortfolio: React.FC = () => {
                         portfolio.color === 'amber' ? 'text-amber-600' :
                             'text-emerald-600';
                     const styles = colorStyles[portfolio.color];
+                    const actionCount = portfolio.availableActions.length;
 
                     return (
                         <Card
@@ -247,7 +354,7 @@ export const ActionPortfolio: React.FC = () => {
                                     ? `ring-2 ring-[var(--accent-${portfolio.color})] shadow-lg`
                                     : "hover:border-zinc-300 hover:shadow-md border-zinc-200"
                             )}
-                            onClick={() => setSelectedPortfolio(portfolio.id)}
+                            onClick={() => setSelectedPortfolio(isSelected ? null : portfolio.id)}
                         >
                             {portfolio.id === 'risk-elimination' && (
                                 <div className="absolute top-0 right-0 bg-black text-white text-[10px] font-bold px-2 py-0.5 rounded-bl-lg uppercase tracking-wider flex items-center gap-1">
@@ -298,63 +405,74 @@ export const ActionPortfolio: React.FC = () => {
 
                                 {/* Actions Count */}
                                 <div className="flex items-center justify-between text-xs pt-4 border-t border-zinc-100">
-                                    <span className="text-zinc-400 font-medium">{portfolio.actions.length} actions available</span>
-                                    <span className={clsx("font-bold", styles?.text)}>View details</span>
+                                    <span className={clsx("font-medium", actionCount === 0 ? "text-zinc-300" : "text-zinc-500")}>
+                                        {actionCount === 0 ? 'No actions available' : `${actionCount} actions available`}
+                                    </span>
+                                    <span className={clsx("font-bold", styles?.text)}>
+                                        {isSelected ? 'Close' : 'View details'}
+                                    </span>
                                 </div>
                             </div>
 
                             {/* Expanded Actions */}
                             {isSelected && (
                                 <div className="bg-zinc-50 border-t border-zinc-200 p-6 space-y-3">
-                                    {portfolio.actions.map(action => {
-                                        const isActive = activeScenarios.includes(action.id);
-                                        return (
-                                            <div
-                                                key={action.id}
-                                                className={clsx(
-                                                    "flex items-center justify-between p-4 rounded-lg border transition-all shadow-sm cursor-pointer",
-                                                    isActive
-                                                        ? "bg-emerald-50 border-emerald-200"
-                                                        : "bg-white border-zinc-200 hover:border-zinc-300"
-                                                )}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    toggleScenario(action.id);
-                                                }}
-                                            >
-                                                <div className="flex-1 mr-4">
-                                                    <div className="flex items-center gap-2 mb-1.5">
-                                                        <span className="text-sm font-bold text-black">{action.title}</span>
-                                                        <Badge variant="outline" className="bg-white text-zinc-600 border-zinc-200 text-[10px] uppercase font-bold">{action.lever}</Badge>
+                                    {actionCount === 0 ? (
+                                        <div className="text-center py-4 text-zinc-400 text-xs italic">
+                                            All recommended actions have been applied or are not currently applicable.
+                                        </div>
+                                    ) : (
+                                        portfolio.availableActions.map(action => {
+                                            const isActionApplying = applyingAction === action.id;
+
+                                            return (
+                                                <div
+                                                    key={action.id}
+                                                    className="bg-white border border-zinc-200 rounded-lg p-4 shadow-sm hover:border-zinc-300 transition-all cursor-default"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <div>
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <span className="text-sm font-bold text-black">{action.title}</span>
+                                                                <Badge variant="outline" className="bg-zinc-50 text-zinc-600 border-zinc-200 text-[10px] uppercase font-bold">{action.type}</Badge>
+                                                            </div>
+                                                            <p className="text-xs text-zinc-500">{action.description}</p>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex items-center gap-4 text-xs text-zinc-500 font-medium">
-                                                        <span className="flex items-center gap-1.5">
-                                                            <Clock size={12} className="text-zinc-400" /> {action.leadTime}
-                                                        </span>
-                                                        <span className="flex items-center gap-1.5">
-                                                            <Users size={12} className="text-zinc-400" /> {action.owner}
-                                                        </span>
+
+                                                    <div className="flex items-end justify-between mt-3">
+                                                        <div className="text-xs text-zinc-500 font-medium space-y-1">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <Clock size={12} className="text-zinc-400" /> {action.leadTime}
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <Users size={12} className="text-zinc-400" /> {action.owner}
+                                                            </div>
+                                                        </div>
+
+                                                        <Button
+                                                            size="sm"
+                                                            onClick={() => handleApplyAction(action.id, portfolio.id)}
+                                                            disabled={loading || !!applyingAction}
+                                                            className={clsx(
+                                                                "h-8 text-xs font-bold",
+                                                                portfolio.color === 'blue' ? "bg-blue-600 hover:bg-blue-700" :
+                                                                    portfolio.color === 'amber' ? "bg-amber-600 hover:bg-amber-700" :
+                                                                        "bg-emerald-600 hover:bg-emerald-700"
+                                                            )}
+                                                        >
+                                                            {isActionApplying ? (
+                                                                <span className="flex items-center gap-2">Applying...</span>
+                                                            ) : (
+                                                                <span className="flex items-center gap-1">Apply <Play size={10} fill="currentColor" /></span>
+                                                            )}
+                                                        </Button>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-4">
-                                                    <div className="text-right">
-                                                        <p className="text-[10px] text-zinc-400 font-bold uppercase">Delta</p>
-                                                        <p className="text-sm font-bold text-emerald-600">+₹{action.deltaCashP50} Cr</p>
-                                                    </div>
-                                                    <button
-                                                        className={clsx(
-                                                            "w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-sm",
-                                                            isActive
-                                                                ? "bg-emerald-600 text-white"
-                                                                : "bg-white text-zinc-300 border border-zinc-200 hover:text-black hover:border-black"
-                                                        )}
-                                                    >
-                                                        {isActive ? <CheckCircle2 size={16} /> : <div className="w-3 h-3 rounded-full bg-current" />}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                                            );
+                                        })
+                                    )}
                                 </div>
                             )}
                         </Card>
